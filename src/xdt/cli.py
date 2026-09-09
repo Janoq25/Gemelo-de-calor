@@ -14,6 +14,7 @@ from rich.console import Console
 from rich.table import Table
 
 from xdt.config import get_settings
+from xdt.export import write_payload
 from xdt.ingest.epht import MEASURES, EphtConnector
 from xdt.storage import code_version, session
 from xdt.twin.state import StateStore
@@ -136,6 +137,19 @@ def state_history(
             geo_level=geo_level, geoid=geoid, valid_date=valid_date, variable=variable
         )
     console.print(df.to_string() if not df.empty else "[yellow]sin registros[/]")
+
+
+@app.command("export")
+def export_front(
+    out: Annotated[str, typer.Option(help="Ruta del JSON de salida")] = "data/features/front_payload.json",
+) -> None:
+    """Exporta el payload que consume la interfaz.
+
+    La frontera motor <-> visor es este archivo, no un servidor (§12.2).
+    """
+    with session() as con:
+        path = write_payload(con, out)
+    console.print(f"[green]escrito[/] {path}")
 
 
 if __name__ == "__main__":  # pragma: no cover

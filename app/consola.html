@@ -1,0 +1,575 @@
+<title>Consola del Gemelo de Calor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --ground:#EEF1F4; --surface:#FFFFFF; --surface-2:#F6F8FA;
+  --ink:#141D26; --ink-2:#3E4E5E; --ink-3:#6B7C8C;
+  --rule:#D8E0E7; --rule-2:#E8EDF1;
+  --accent:#0E7C86; --accent-ink:#0A5F67; --accent-wash:#E2F1F2;
+  --ok:#2F7D5C; --warn:#A9721A; --idle:#8494A3;
+  --r1:#FBE6C4; --r2:#F3BE6E; --r3:#E2843F; --r4:#C2502C; --r5:#8C2320;
+  --nodata:#C3CCD5; --nodata-line:#A9B5C0;
+  --shadow:0 1px 2px rgba(20,29,38,.06),0 8px 24px -12px rgba(20,29,38,.18);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#0F141A; --surface:#171E26; --surface-2:#1D262F;
+    --ink:#E9EFF4; --ink-2:#B3C1CE; --ink-3:#8395A5;
+    --rule:#2A343F; --rule-2:#222B34;
+    --accent:#3FB3BC; --accent-ink:#6FD0D7; --accent-wash:#123338;
+    --r1:#6B5730; --r2:#A8782F; --r3:#CE7739; --r4:#D9563A; --r5:#B33028;
+    --nodata:#39434E; --nodata-line:#4E5A67;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#0F141A; --surface:#171E26; --surface-2:#1D262F;
+  --ink:#E9EFF4; --ink-2:#B3C1CE; --ink-3:#8395A5;
+  --rule:#2A343F; --rule-2:#222B34;
+  --accent:#3FB3BC; --accent-ink:#6FD0D7; --accent-wash:#123338;
+  --r1:#6B5730; --r2:#A8782F; --r3:#CE7739; --r4:#D9563A; --r5:#B33028;
+  --nodata:#39434E; --nodata-line:#4E5A67;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px -14px rgba(0,0,0,.7);
+}
+
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.55; margin:0;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 72px}
+h1,h2,h3{font-family:"IBM Plex Sans Condensed","IBM Plex Sans",system-ui,sans-serif;
+  text-wrap:balance;margin:0;letter-spacing:-.01em}
+.mono{font-family:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Consolas,monospace}
+.tnum{font-variant-numeric:tabular-nums}
+
+/* ---------- masthead ---------- */
+.masthead{border-bottom:1px solid var(--rule);background:var(--surface);
+  margin-bottom:32px}
+.masthead .wrap{padding-top:26px;padding-bottom:22px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--accent-ink)}
+.masthead h1{font-size:clamp(28px,4.2vw,42px);font-weight:700;margin:8px 0 6px;line-height:1.08}
+.masthead p{margin:0;color:var(--ink-2);max-width:62ch}
+.stamp{display:flex;flex-wrap:wrap;gap:8px;margin-top:18px}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-2);
+  background:var(--surface-2);border:1px solid var(--rule);border-radius:3px;
+  padding:4px 9px;white-space:nowrap}
+.chip b{color:var(--ink);font-weight:600}
+
+/* ---------- generic section ---------- */
+section{margin-top:44px}
+.shead{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;
+  border-bottom:1px solid var(--rule);padding-bottom:9px;margin-bottom:20px}
+.shead h2{font-size:21px;font-weight:700}
+.shead .note{font-size:13px;color:var(--ink-3);margin-left:auto}
+.lede{color:var(--ink-2);max-width:68ch;margin:-6px 0 20px}
+
+/* ---------- map console ---------- */
+.console{display:grid;grid-template-columns:minmax(0,1fr) 296px;gap:20px;align-items:start}
+@media(max-width:900px){.console{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  box-shadow:var(--shadow)}
+.mapbox{padding:8px 10px 12px;overflow-x:auto}
+svg.usmap{display:block;width:100%;height:auto;min-width:520px}
+svg.usmap path.st{stroke:var(--surface);stroke-width:.9;cursor:pointer;
+  transition:opacity .12s ease}
+svg.usmap path.st:hover,svg.usmap path.st:focus{opacity:.72;outline:none}
+svg.usmap path.st.sel{stroke:var(--ink);stroke-width:2.1}
+svg.usmap text.lbl{font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  font-weight:500;pointer-events:none;fill:var(--ink-2)}
+
+.yearbar{display:flex;gap:0;border:1px solid var(--rule);border-radius:4px;
+  overflow:hidden;background:var(--surface-2)}
+.yearbar button{flex:1;font:600 14px/1 "IBM Plex Sans",sans-serif;padding:10px 6px;
+  background:transparent;color:var(--ink-2);border:0;cursor:pointer;
+  border-right:1px solid var(--rule)}
+.yearbar button:last-child{border-right:0}
+.yearbar button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.yearbar button:focus-visible{outline:2px solid var(--accent-ink);outline-offset:-2px}
+
+.rail{display:flex;flex-direction:column;gap:14px}
+.rail .panel{padding:15px 16px}
+.klabel{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.11em;text-transform:uppercase;color:var(--ink-3);margin:0 0 7px}
+.bignum{font-family:"IBM Plex Sans Condensed",sans-serif;font-weight:700;
+  font-size:52px;line-height:.94;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.bigsub{font-size:13px;color:var(--ink-2);margin-top:5px}
+.delta{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--warn);
+  margin-top:9px;padding-top:9px;border-top:1px dashed var(--rule)}
+
+.readout dl{margin:0;display:grid;grid-template-columns:auto 1fr;gap:5px 12px;
+  font-size:13px}
+.readout dt{color:var(--ink-3);font-family:"IBM Plex Mono",monospace;font-size:11.5px}
+.readout dd{margin:0;text-align:right;font-variant-numeric:tabular-nums;font-weight:500}
+.readout .hint{color:var(--ink-3);font-size:12.5px;margin:0}
+.rate{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:30px;font-weight:700;
+  line-height:1;font-variant-numeric:tabular-nums}
+.rate small{font-family:"IBM Plex Mono",monospace;font-size:11px;font-weight:400;
+  color:var(--ink-3);margin-left:5px}
+.tag{display:inline-block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  padding:2px 7px;border-radius:3px;font-weight:500}
+.tag.no{background:var(--nodata);color:var(--ink)}
+.tag.si{background:var(--accent-wash);color:var(--accent-ink)}
+
+.legend{display:flex;flex-direction:column;gap:6px}
+.lrow{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--ink-2)}
+.sw{width:26px;height:12px;border-radius:2px;flex:none;border:1px solid rgba(0,0,0,.08)}
+
+/* ---------- dot plot ---------- */
+.spread{display:grid;gap:18px}
+.srow{background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  padding:15px 18px 8px;box-shadow:var(--shadow)}
+.srow header{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:4px}
+.srow h3{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.srow .meta{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-3)}
+.srow .meta b{color:var(--ink);font-weight:600}
+.plot{width:100%;height:auto;overflow:visible}
+
+/* ---------- bitemporal ---------- */
+.bt{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+@media(max-width:760px){.bt{grid-template-columns:1fr}}
+.btcard{background:var(--surface);border:1px solid var(--rule);border-radius:5px;
+  padding:17px 19px;box-shadow:var(--shadow);position:relative}
+.btcard.now{border-color:var(--accent)}
+.btcard .when{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--ink-3);
+  display:block;margin-bottom:11px}
+.btcard .val{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:44px;
+  font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.btcard .cap{font-size:13px;color:var(--ink-2);margin-top:8px}
+.btcard .rev{position:absolute;top:15px;right:17px;font-family:"IBM Plex Mono",monospace;
+  font-size:10.5px;color:var(--ink-3);background:var(--surface-2);
+  border:1px solid var(--rule);border-radius:3px;padding:2px 6px}
+
+/* ---------- layers ---------- */
+.layers{display:grid;gap:1px;background:var(--rule);border:1px solid var(--rule);
+  border-radius:5px;overflow:hidden}
+.layer{background:var(--surface);display:grid;grid-template-columns:52px 1fr auto;
+  gap:16px;align-items:start;padding:14px 18px}
+.layer .id{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:14px;
+  color:var(--accent-ink)}
+.layer h3{font-size:15px;font-weight:600;font-family:"IBM Plex Sans",sans-serif}
+.layer p{margin:3px 0 0;font-size:13px;color:var(--ink-2);max-width:66ch}
+.layer code{font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink-3)}
+.status{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:3px;
+  white-space:nowrap}
+.status.implementado{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.status.parcial{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.status.pendiente{background:var(--surface-2);color:var(--idle);border:1px solid var(--rule)}
+.layer.pend{opacity:.72}
+
+/* ---------- ledger ---------- */
+.ledger{width:100%;border-collapse:collapse;font-size:13px}
+.ledger th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;font-weight:500;
+  letter-spacing:.09em;text-transform:uppercase;color:var(--ink-3);text-align:left;
+  padding:0 14px 8px 0;border-bottom:1px solid var(--rule)}
+.ledger td{padding:9px 14px 9px 0;border-bottom:1px solid var(--rule-2);
+  font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--ink-2)}
+.ledger td.k{color:var(--ink);font-weight:500}
+.tablewrap{overflow-x:auto;background:var(--surface);border:1px solid var(--rule);
+  border-radius:5px;padding:16px 18px 4px;box-shadow:var(--shadow)}
+
+/* ---------- caveat ---------- */
+.caveat{background:var(--surface-2);border:1px solid var(--rule);
+  border-left:3px solid var(--warn);border-radius:4px;padding:15px 18px;
+  font-size:13.5px;color:var(--ink-2);max-width:72ch}
+.caveat b{color:var(--ink)}
+footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
+  font-size:12.5px;color:var(--ink-3);display:flex;gap:16px;flex-wrap:wrap}
+
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<header class="masthead">
+  <div class="wrap">
+    <div class="eyebrow">Gemelo digital · capas L0–L5 · lectura del estado</div>
+    <h1>Consola del gemelo de calor</h1>
+    <p>Riesgo de morbilidad por calor con enfoque de equidad. Todo lo que se ve aquí
+       sale del estado real del gemelo, no de valores de ejemplo.</p>
+    <div class="stamp" id="stamp"></div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section id="mapa" style="margin-top:0">
+    <div class="shead">
+      <h2>Quién reporta, y cuánto</h2>
+      <span class="note">EPHT medida 440 · tasa ajustada por edad · por 100 000 hab.</span>
+    </div>
+    <p class="lede">El desenlace solo existe a nivel estatal y anual. Y ni siquiera para
+      todos los estados: la trama diagonal marca los que <b>no reportaron</b> ese año.
+      Esa ausencia no es un hueco del gráfico — es la limitación §15.2 del plan.</p>
+
+    <div class="console">
+      <div class="panel mapbox">
+        <svg class="usmap" viewBox="0 0 960 610" role="img" aria-label="Mapa de tasas por estado">
+          <defs>
+            <pattern id="hatch" width="6" height="6" patternTransform="rotate(45)"
+                     patternUnits="userSpaceOnUse">
+              <rect width="6" height="6" fill="var(--nodata)"></rect>
+              <line x1="0" y1="0" x2="0" y2="6" stroke="var(--nodata-line)" stroke-width="2"></line>
+            </pattern>
+          </defs>
+          <g id="states"></g>
+          <g id="labels"></g>
+        </svg>
+      </div>
+
+      <div class="rail">
+        <div class="yearbar" id="yearbar" role="group" aria-label="Año"></div>
+
+        <div class="panel">
+          <p class="klabel">Estados que reportan</p>
+          <div class="bignum" id="nrep">—</div>
+          <div class="bigsub" id="nrepsub"></div>
+          <div class="delta" id="delta"></div>
+        </div>
+
+        <div class="panel readout" id="readout"></div>
+
+        <div class="panel">
+          <p class="klabel">Tasa por 100 000</p>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="dispersion">
+    <div class="shead">
+      <h2>La dispersión entre estados</h2>
+      <span class="note">cada punto es un estado reportante</span>
+    </div>
+    <p class="lede">Un rango de más de diez veces entre el estado más alto y el más bajo.
+      No es solo clima: mezcla riesgo real con <b>heterogeneidad de codificación</b> entre
+      sistemas estatales de vigilancia (riesgo R2b). Por eso la identificación de
+      modificadores se restringe a variación intra-estatal.</p>
+    <div class="spread" id="spread"></div>
+  </section>
+
+  <section id="bitemporal">
+    <div class="shead">
+      <h2>Viaje en el tiempo</h2>
+      <span class="note">L1 · eje <span class="mono">known_at</span></span>
+    </div>
+    <p class="lede">El estado guarda dos ejes de tiempo: la fecha que el dato describe y el
+      instante en que el gemelo se enteró. Cuando una fuente corrige un valor, el anterior
+      <b>no se sobrescribe</b>. Sin esto, evaluar hoy una predicción emitida en el pasado
+      usaría datos que entonces no existían — fuga de información.</p>
+    <div class="bt" id="bt"></div>
+  </section>
+
+  <section id="capas">
+    <div class="shead">
+      <h2>Estado de las seis capas</h2>
+      <span class="note">§6 del plan</span>
+    </div>
+    <div class="layers" id="layers"></div>
+  </section>
+
+  <section id="procedencia">
+    <div class="shead">
+      <h2>Procedencia</h2>
+      <span class="note">data/raw es inmutable y direccionado por contenido</span>
+    </div>
+    <p class="lede">Cada descarga cruda queda indexada con su hash SHA-256. Cualquier cifra
+      de esta página se puede rastrear hasta el archivo exacto del que salió.</p>
+    <div class="tablewrap">
+      <table class="ledger">
+        <thead><tr><th>Hash</th><th>Fuente</th><th>Recurso</th><th>Bytes</th><th>Descargado</th></tr></thead>
+        <tbody id="ledger"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="alcance">
+    <div class="shead"><h2>Lo que esta consola todavía no muestra</h2></div>
+    <div class="caveat">
+      <b>No hay ningún número de riesgo en esta página, y es deliberado.</b>
+      La capa L3 (emulador predictivo y explicabilidad SHAP) aún no está construida,
+      así que mostrar un «riesgo» sería inventarlo. Lo que se ve son datos observados
+      del CDC y el estado real del motor. El hito del mes&nbsp;4 del cronograma —
+      baseline de umbral + LightGBM con AUC reportado — es el que habilita esa capa.
+      Los escenarios de L4 ya perturban el estado, pero traducir esa perturbación a
+      riesgo requiere L3.
+    </div>
+  </section>
+
+  <footer>
+    <span>Fuente: CDC Environmental Public Health Tracking Network</span>
+    <span class="mono" id="foot"></span>
+  </footer>
+</div>
+
+<script>
+const PAYLOAD = {"generado_en":"2026-09-09T15:19:47","version_codigo":"82d5053-dirty","corte_bitemporal":"2026-09-09T15:19:47","geo_level":"state","variables":["epht_m1_age_adj_rate"],"anios":["2022","2023"],"estados":[{"fips":"01","postal":"AL","name":"Alabama","valores":{}},{"fips":"02","postal":"AK","name":"Alaska","valores":{}},{"fips":"04","postal":"AZ","name":"Arizona","valores":{"2022":36.8,"2023":49.4}},{"fips":"05","postal":"AR","name":"Arkansas","valores":{}},{"fips":"06","postal":"CA","name":"California","valores":{}},{"fips":"08","postal":"CO","name":"Colorado","valores":{"2022":8.3}},{"fips":"09","postal":"CT","name":"Connecticut","valores":{"2022":10.5,"2023":7.8}},{"fips":"10","postal":"DE","name":"Delaware","valores":{}},{"fips":"11","postal":"DC","name":"District of Columbia","valores":{}},{"fips":"12","postal":"FL","name":"Florida","valores":{"2022":25.2,"2023":36.1}},{"fips":"13","postal":"GA","name":"Georgia","valores":{}},{"fips":"15","postal":"HI","name":"Hawaii","valores":{}},{"fips":"16","postal":"ID","name":"Idaho","valores":{}},{"fips":"17","postal":"IL","name":"Illinois","valores":{}},{"fips":"18","postal":"IN","name":"Indiana","valores":{"2022":33.7,"2023":30.4}},{"fips":"19","postal":"IA","name":"Iowa","valores":{"2022":32.0,"2023":34.1}},{"fips":"20","postal":"KS","name":"Kansas","valores":{"2022":40.9,"2023":46.1}},{"fips":"21","postal":"KY","name":"Kentucky","valores":{"2022":41.0}},{"fips":"22","postal":"LA","name":"Louisiana","valores":{"2022":42.8,"2023":57.7}},{"fips":"23","postal":"ME","name":"Maine","valores":{"2022":17.2}},{"fips":"24","postal":"MD","name":"Maryland","valores":{}},{"fips":"25","postal":"MA","name":"Massachusetts","valores":{}},{"fips":"26","postal":"MI","name":"Michigan","valores":{"2022":11.1}},{"fips":"27","postal":"MN","name":"Minnesota","valores":{"2022":9.4}},{"fips":"28","postal":"MS","name":"Mississippi","valores":{}},{"fips":"29","postal":"MO","name":"Missouri","valores":{"2022":47.0}},{"fips":"30","postal":"MT","name":"Montana","valores":{}},{"fips":"31","postal":"NE","name":"Nebraska","valores":{"2022":30.7,"2023":30.7}},{"fips":"32","postal":"NV","name":"Nevada","valores":{}},{"fips":"33","postal":"NH","name":"New Hampshire","valores":{}},{"fips":"34","postal":"NJ","name":"New Jersey","valores":{"2022":8.9,"2023":6.9}},{"fips":"35","postal":"NM","name":"New Mexico","valores":{"2022":17.0}},{"fips":"36","postal":"NY","name":"New York","valores":{"2022":8.2,"2023":6.3}},{"fips":"37","postal":"NC","name":"North Carolina","valores":{"2023":23.5}},{"fips":"38","postal":"ND","name":"North Dakota","valores":{}},{"fips":"39","postal":"OH","name":"Ohio","valores":{}},{"fips":"40","postal":"OK","name":"Oklahoma","valores":{}},{"fips":"41","postal":"OR","name":"Oregon","valores":{"2022":14.9,"2023":13.2}},{"fips":"42","postal":"PA","name":"Pennsylvania","valores":{"2022":8.5}},{"fips":"44","postal":"RI","name":"Rhode Island","valores":{"2022":4.6,"2023":4.2}},{"fips":"45","postal":"SC","name":"South Carolina","valores":{"2022":33.4,"2023":33.2}},{"fips":"46","postal":"SD","name":"South Dakota","valores":{}},{"fips":"47","postal":"TN","name":"Tennessee","valores":{"2022":41.4}},{"fips":"48","postal":"TX","name":"Texas","valores":{}},{"fips":"49","postal":"UT","name":"Utah","valores":{"2022":15.4}},{"fips":"50","postal":"VT","name":"Vermont","valores":{"2022":10.5}},{"fips":"51","postal":"VA","name":"Virginia","valores":{"2022":20.4,"2023":18.4}},{"fips":"53","postal":"WA","name":"Washington","valores":{}},{"fips":"54","postal":"WV","name":"West Virginia","valores":{}},{"fips":"55","postal":"WI","name":"Wisconsin","valores":{"2022":13.7,"2023":14.0}},{"fips":"56","postal":"WY","name":"Wyoming","valores":{}}],"cobertura":[{"anio":2022,"n_estados":26,"min":4.6,"max":47.0,"mediana":17.1,"razon_max_min":10.2},{"anio":2023,"n_estados":16,"min":4.2,"max":57.7,"mediana":26.9,"razon_max_min":13.7}],"revisiones":[{"fips":"04","postal":"AZ","anio":2023,"revision":0,"valor":48.1,"known_at":"2026-09-09 15:02:19.004093"},{"fips":"04","postal":"AZ","anio":2023,"revision":1,"valor":49.4,"known_at":"2026-09-09 15:02:19.840230"}],"capas":[{"id":"L0","nombre":"Trazabilidad","estado":"implementado","detalle":"Cada prediccion se persiste con timestamp, version de modelo, hash de entrada, semilla y el corte bitemporal usado.","modulo":"twin/registry.py"},{"id":"L1","nombre":"Estado del gemelo","estado":"implementado","detalle":"Snapshot bitemporal por (geografia, fecha). Consultable en cualquier instante pasado. Las revisiones no sobrescriben.","modulo":"twin/state.py"},{"id":"L2","nombre":"Sincronizacion","estado":"parcial","detalle":"Conector EPHT operativo con cache inmutable y reintentos. Faltan gridMET, EAGLE-I, SVI, PLACES, LACE, Landsat, NWS.","modulo":"ingest/"},{"id":"L3","nombre":"Emulador predictivo + XAI","estado":"pendiente","detalle":"Escalera de 5 modelos y SHAP. Ningun numero de riesgo se muestra en esta interfaz porque aun no existe modelo.","modulo":"models/, explain/"},{"id":"L4","nombre":"Motor de escenarios","estado":"parcial","detalle":"Escenarios componibles con la firma escenario(estado)->estado. Perturban el estado; el efecto sobre el riesgo requiere L3.","modulo":"twin/scenarios.py"},{"id":"L5","nombre":"Calibracion y aprendizaje","estado":"pendiente","detalle":"Compara predicciones pasadas con observaciones posteriores. El esquema (observation, calibration_run) ya lo soporta.","modulo":"twin/calibrate.py"}],"procedencia":{"n_hechos":42,"fuentes":["epht"],"artefactos":[{"hash":"06cb571cb7f97f2d","fuente":"epht","recurso":"epht:getCoreHolder:440:2022","bytes":35516,"descargado":"2026-09-09 14:39:52"},{"hash":"87eebc936d802abb","fuente":"epht","recurso":"epht:getCoreHolder:440:2023","bytes":22634,"descargado":"2026-09-09 14:39:53"}]}};
+const PATHS   = {"AL":{"name":"Alabama","d":"M663,408L671,409L678,409L677,446L684,459L685,479L678,480L663,480L663,491L649,493L647,480L640,480L640,408Z","x":660.0,"y":450.0},"AK":{"name":"Alaska","d":"M175,470L210,460L235,480L250,530L220,550L180,560L160,535L150,510L140,510L125,530L110,510L130,480Z","x":185.0,"y":510.0},"AZ":{"name":"Arizona","d":"M216,335L296,346L282,453L243,446L214,438L183,445L185,417L194,395L216,335Z","x":242.0,"y":395.0},"AR":{"name":"Arkansas","d":"M553,371L607,370L606,400L614,411L610,436L585,436L577,438L551,438L552,393L544,392L545,372Z","x":577.0,"y":405.0},"CA":{"name":"California","d":"M103,178L157,214L142,267L194,363L184,392L174,390L165,379L155,364L142,352L127,341L114,316L95,274L86,236L92,208Z","x":138.0,"y":285.0},"CO":{"name":"Colorado","d":"M321,257L418,271L407,347L309,333Z","x":365.0,"y":300.0},"CT":{"name":"Connecticut","d":"M848,197L865,200L860,214L842,211Z","x":855.0,"y":206.0},"DE":{"name":"Delaware","d":"M806,243L814,245L810,268L804,264Z","x":810.0,"y":254.0},"FL":{"name":"Florida","d":"M684,480L717,477L745,479L764,505L782,544L777,557L758,542L745,510L729,484L686,480L663,480L663,491L684,491Z","x":735.0,"y":512.0},"GA":{"name":"Georgia","d":"M678,409L727,399L743,443L739,478L717,477L684,480L685,459L678,446Z","x":708.0,"y":442.0},"HI":{"name":"Hawaii","d":"M280,545L295,540L305,550L288,560ZM315,532L327,530L325,539ZM335,520L348,518L345,527ZM355,510L370,505L375,520L360,525Z","x":325.0,"y":535.0},"ID":{"name":"Idaho","d":"M210,87L229,89L223,158L270,187L261,250L201,238L193,171L215,168Z","x":228.0,"y":165.0},"IL":{"name":"Illinois","d":"M612,243L631,248L641,270L638,348L627,364L609,368L595,335L608,290L602,260Z","x":620.0,"y":300.0},"IN":{"name":"Indiana","d":"M641,250L676,257L671,332L654,345L638,348L641,270Z","x":658.0,"y":295.0},"IA":{"name":"Iowa","d":"M519,232L599,243L595,290L587,294L528,290L523,248Z","x":558.0,"y":265.0},"KS":{"name":"Kansas","d":"M416,290L515,296L516,346L417,344Z","x":466.0,"y":318.0},"KY":{"name":"Kentucky","d":"M642,347L685,336L721,328L707,358L683,361L627,364L638,348Z","x":672.0,"y":348.0},"LA":{"name":"Louisiana","d":"M551,438L577,438L585,436L610,436L609,466L628,472L627,486L603,495L575,483L554,484L553,446Z","x":585.0,"y":465.0},"ME":{"name":"Maine","d":"M867,110L885,108L900,135L890,165L870,180L857,175L862,130Z","x":878.0,"y":145.0},"MD":{"name":"Maryland","d":"M752,246L805,243L803,266L788,272L775,257L751,257Z","x":778.0,"y":252.0},"MA":{"name":"Massachusetts","d":"M848,187L883,189L891,200L875,208L846,197Z","x":865.0,"y":195.0},"MI":{"name":"Michigan","d":"M633,180L668,172L690,195L693,248L671,256L643,249L642,210ZM601,164L648,155L645,173L601,180Z","x":668.0,"y":215.0},"MN":{"name":"Minnesota","d":"M505,123L561,128L576,160L547,192L555,236L519,232L510,180Z","x":536.0,"y":180.0},"MS":{"name":"Mississippi","d":"M606,400L640,402L640,480L627,486L610,466L610,436L614,411Z","x":624.0,"y":440.0},"MO":{"name":"Missouri","d":"M515,296L587,294L595,335L609,368L553,371L545,372L516,346Z","x":560.0,"y":330.0},"MT":{"name":"Montana","d":"M229,89L382,110L371,188L269,173L223,158Z","x":300.0,"y":138.0},"NE":{"name":"Nebraska","d":"M399,228L512,238L528,290L416,290L418,271L393,267Z","x":460.0,"y":260.0},"NV":{"name":"Nevada","d":"M157,214L230,225L216,335L194,363L142,267Z","x":188.0,"y":275.0},"NH":{"name":"New Hampshire","d":"M852,165L866,166L858,206L848,203L849,175Z","x":856.0,"y":180.0},"NJ":{"name":"New Jersey","d":"M818,223L830,223L822,256L808,252Z","x":822.0,"y":238.0},"NM":{"name":"New Mexico","d":"M296,346L384,352L373,446L310,439L308,448L282,453Z","x":336.0,"y":398.0},"NY":{"name":"New York","d":"M765,190L810,185L848,175L844,215L820,224L775,220L750,228Z","x":795.0,"y":205.0},"NC":{"name":"North Carolina","d":"M714,350L798,340L810,360L775,385L727,399L714,375Z","x":760.0,"y":365.0},"ND":{"name":"North Dakota","d":"M382,110L505,123L498,178L375,166Z","x":440.0,"y":145.0},"OH":{"name":"Ohio","d":"M676,257L723,264L715,315L685,336L671,332Z","x":695.0,"y":288.0},"OK":{"name":"Oklahoma","d":"M417,344L545,350L544,392L475,392L475,402L417,388Z","x":475.0,"y":370.0},"OR":{"name":"Oregon","d":"M111,102L210,116L193,171L201,238L114,223L96,170Z","x":155.0,"y":165.0},"PA":{"name":"Pennsylvania","d":"M738,228L818,233L806,260L735,255Z","x":772.0,"y":242.0},"RI":{"name":"Rhode Island","d":"M867,203L875,204L872,216L864,214Z","x":870.0,"y":210.0},"SC":{"name":"South Carolina","d":"M727,399L775,385L760,428L735,438L727,415Z","x":748.0,"y":412.0},"SD":{"name":"South Dakota","d":"M375,166L498,178L495,236L378,224Z","x":440.0,"y":200.0},"TN":{"name":"Tennessee","d":"M618,368L718,358L712,388L627,398Z","x":668.0,"y":378.0},"TX":{"name":"Texas","d":"M373,446L417,446L417,388L475,402L475,392L544,392L551,438L553,484L540,510L505,548L470,545L445,510L400,480L360,470L308,448Z","x":450.0,"y":465.0},"UT":{"name":"Utah","d":"M230,225L304,236L296,346L216,335Z","x":260.0,"y":285.0},"VT":{"name":"Vermont","d":"M838,168L852,165L848,203L835,200Z","x":842.0,"y":184.0},"VA":{"name":"Virginia","d":"M721,328L785,310L805,335L770,340L718,358Z","x":760.0,"y":330.0},"WA":{"name":"Washington","d":"M124,45L223,58L210,116L111,102L106,68Z","x":165.0,"y":82.0},"WV":{"name":"West Virginia","d":"M715,278L750,270L748,310L721,328L707,315Z","x":732.0,"y":295.0},"WI":{"name":"Wisconsin","d":"M561,168L608,172L615,245L565,240L555,205Z","x":585.0,"y":205.0},"WY":{"name":"Wyoming","d":"M270,187L385,200L375,270L260,255Z","x":320.0,"y":228.0},"DC":{"name":"District of Columbia","d":"M790,260L794,260L794,264L790,264Z","x":792.0,"y":262.0}};
+
+const RAMP  = ["--r1","--r2","--r3","--r4","--r5"];
+const BREAKS= [10,20,30,45];
+const css   = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const bin   = v => { let i=0; while(i<BREAKS.length && v>=BREAKS[i]) i++; return i; };
+const fillFor = v => v==null ? "url(#hatch)" : `var(${RAMP[bin(v)]})`;
+
+const byPostal = {};
+PAYLOAD.estados.forEach(s => byPostal[s.postal] = s);
+const years = PAYLOAD.anios;
+let year = years[years.length-1];
+let sel  = null;
+
+/* ---------- masthead stamp ---------- */
+document.getElementById("stamp").innerHTML = [
+  ["hechos en el estado", PAYLOAD.procedencia.n_hechos],
+  ["fuentes", PAYLOAD.procedencia.fuentes.join(", ") || "—"],
+  ["versión de código", PAYLOAD.version_codigo],
+  ["corte bitemporal", PAYLOAD.corte_bitemporal.replace("T"," ")]
+].map(([k,v]) => `<span class="chip">${k} <b>${v}</b></span>`).join("");
+
+document.getElementById("foot").textContent =
+  "generado " + PAYLOAD.generado_en.replace("T"," ") + " · " + PAYLOAD.version_codigo;
+
+/* ---------- year selector ---------- */
+const yb = document.getElementById("yearbar");
+yb.innerHTML = years.map(y =>
+  `<button type="button" data-y="${y}" aria-pressed="${y===year}">${y}</button>`).join("");
+yb.addEventListener("click", e => {
+  const b = e.target.closest("button"); if(!b) return;
+  year = b.dataset.y;
+  [...yb.children].forEach(c => c.setAttribute("aria-pressed", c.dataset.y===year));
+  render();
+});
+
+/* ---------- map ---------- */
+const gStates = document.getElementById("states");
+const gLabels = document.getElementById("labels");
+const NS = "http://www.w3.org/2000/svg";
+
+Object.entries(PATHS).forEach(([pc, p]) => {
+  const el = document.createElementNS(NS,"path");
+  el.setAttribute("d", p.d);
+  el.setAttribute("class","st");
+  el.dataset.pc = pc;
+  el.setAttribute("tabindex","0");
+  el.setAttribute("role","button");
+  gStates.appendChild(el);
+
+  const t = document.createElementNS(NS,"text");
+  t.setAttribute("class","lbl");
+  t.setAttribute("x", p.x); t.setAttribute("y", p.y);
+  t.setAttribute("text-anchor","middle");
+  t.textContent = pc;
+  gLabels.appendChild(t);
+});
+
+function pick(pc){ sel = pc; render(); }
+gStates.addEventListener("click", e => {
+  const p = e.target.closest("path"); if(p) pick(p.dataset.pc);
+});
+gStates.addEventListener("mouseover", e => {
+  const p = e.target.closest("path"); if(p) drawReadout(p.dataset.pc);
+});
+gStates.addEventListener("mouseout", () => drawReadout(sel));
+gStates.addEventListener("keydown", e => {
+  if((e.key==="Enter"||e.key===" ") && e.target.dataset.pc){
+    e.preventDefault(); pick(e.target.dataset.pc);
+  }
+});
+gStates.addEventListener("focusin", e => {
+  if(e.target.dataset.pc) drawReadout(e.target.dataset.pc);
+});
+
+/* ---------- readout ---------- */
+function drawReadout(pc){
+  const box = document.getElementById("readout");
+  const s = pc && byPostal[pc];
+  if(!s){
+    box.innerHTML = `<p class="klabel">Estado seleccionado</p>
+      <p class="hint">Pasa el cursor o pulsa sobre un estado del mapa para ver su
+      registro en el gemelo.</p>`;
+    return;
+  }
+  const v = s.valores[year];
+  const rep = v != null;
+  box.innerHTML = `
+    <p class="klabel">${s.name}</p>
+    ${rep
+      ? `<div class="rate">${v.toFixed(1)}<small>por 100 000</small></div>`
+      : `<div><span class="tag no">no reportó en ${year}</span></div>`}
+    <dl style="margin-top:12px">
+      <dt>FIPS</dt><dd class="mono">${s.fips}</dd>
+      <dt>postal</dt><dd class="mono">${s.postal}</dd>
+      ${years.map(y => `<dt>${y}</dt><dd>${
+        s.valores[y] != null
+          ? s.valores[y].toFixed(1)
+          : '<span class="tag no">sin dato</span>'}</dd>`).join("")}
+    </dl>`;
+}
+
+/* ---------- big stat ---------- */
+function stats(y){ return PAYLOAD.cobertura.find(c => String(c.anio) === String(y)); }
+
+function render(){
+  const c = stats(year);
+  gStates.querySelectorAll("path").forEach(p => {
+    const s = byPostal[p.dataset.pc];
+    const v = s ? s.valores[year] : null;
+    p.setAttribute("fill", fillFor(v == null ? null : v));
+    p.classList.toggle("sel", p.dataset.pc === sel);
+    const label = s ? s.name : p.dataset.pc;
+    p.setAttribute("aria-label",
+      v == null ? `${label}: no reportó en ${year}` : `${label}: ${v.toFixed(1)} por 100 000 en ${year}`);
+  });
+  gLabels.querySelectorAll("text").forEach(t => {
+    const s = byPostal[t.textContent];
+    const v = s ? s.valores[year] : null;
+    t.style.fill = (v != null && bin(v) >= 3) ? "#fff" : "var(--ink-2)";
+  });
+
+  document.getElementById("nrep").textContent = c.n_estados;
+  document.getElementById("nrepsub").innerHTML =
+    `de 51 jurisdicciones, en ${year}<br><span class="mono" style="font-size:12px">` +
+    `mediana ${c.mediana} · rango ${c.min}–${c.max}</span>`;
+
+  const other = PAYLOAD.cobertura.find(x => String(x.anio) !== String(year));
+  document.getElementById("delta").textContent = other
+    ? `${other.anio}: ${other.n_estados} estados — la cobertura cambia año a año, ` +
+      `hay que verificarla uno por uno`
+    : "";
+  drawReadout(sel);
+}
+
+/* ---------- legend ---------- */
+document.getElementById("legend").innerHTML = (() => {
+  const lab = ["menos de 10","10 – 20","20 – 30","30 – 45","45 o más"];
+  let h = RAMP.map((r,i) =>
+    `<div class="lrow"><span class="sw" style="background:var(${r})"></span>${lab[i]}</div>`).join("");
+  h += `<div class="lrow" style="margin-top:4px;padding-top:7px;border-top:1px dashed var(--rule)">
+        <span class="sw" style="background:var(--nodata);
+        background-image:repeating-linear-gradient(45deg,transparent 0 2px,var(--nodata-line) 2px 4px)">
+        </span>no reportó ese año</div>`;
+  return h;
+})();
+
+/* ---------- dot plot ---------- */
+(function spread(){
+  const W = 900, H = 108, L = 54, R = 42, TOP = 30;
+  const all = PAYLOAD.estados.flatMap(s => years.map(y => s.valores[y]).filter(v => v != null));
+  const lo = 0, hi = Math.ceil(Math.max(...all) / 10) * 10;
+  const x = v => L + (v - lo) / (hi - lo) * (W - L - R);
+
+  document.getElementById("spread").innerHTML = PAYLOAD.cobertura.map(c => {
+    const pts = PAYLOAD.estados
+      .map(s => ({pc: s.postal, v: s.valores[String(c.anio)]}))
+      .filter(d => d.v != null)
+      .sort((a,b) => a.v - b.v);
+
+    // dispersión vertical determinista para puntos cercanos
+    const rows = []; const seen = [];
+    pts.forEach(d => {
+      let lane = 0;
+      while (seen.some(s2 => s2.lane === lane && Math.abs(x(s2.v) - x(d.v)) < 11)) lane++;
+      seen.push({lane, v: d.v});
+      rows.push({...d, lane});
+    });
+    const maxLane = Math.max(...rows.map(r => r.lane));
+    const h = TOP + 26 + maxLane * 13;
+
+    const ticks = [];
+    for (let t = 0; t <= hi; t += 10) ticks.push(t);
+
+    return `<div class="srow">
+      <header>
+        <h3>${c.anio}</h3>
+        <span class="meta"><b>${c.n_estados}</b> estados reportan</span>
+        <span class="meta">mediana <b>${c.mediana}</b></span>
+        <span class="meta">razón máx/mín <b>${c.razon_max_min}×</b></span>
+      </header>
+      <svg class="plot" viewBox="0 0 ${W} ${h}" role="img"
+           aria-label="Dispersión de tasas en ${c.anio}: de ${c.min} a ${c.max} por 100 000">
+        ${ticks.map(t => `
+          <line x1="${x(t)}" y1="${TOP-8}" x2="${x(t)}" y2="${h-16}"
+                stroke="var(--rule-2)" stroke-width="1"></line>
+          ${t === 0 ? "" : `<text x="${x(t)}" y="${h-4}" text-anchor="middle"
+                font-family="IBM Plex Mono, monospace" font-size="11"
+                fill="var(--ink-3)">${t}</text>`}`).join("")}
+        <line x1="${x(c.min)}" y1="${TOP-14}" x2="${x(c.max)}" y2="${TOP-14}"
+              stroke="var(--accent)" stroke-width="2"></line>
+        <text x="${x(c.min)}" y="${TOP-20}" text-anchor="middle"
+              font-family="IBM Plex Mono, monospace" font-size="11"
+              fill="var(--accent-ink)" font-weight="500">${c.min}</text>
+        <text x="${x(c.max)}" y="${TOP-20}" text-anchor="middle"
+              font-family="IBM Plex Mono, monospace" font-size="11"
+              fill="var(--accent-ink)" font-weight="500">${c.max}</text>
+        ${rows.map(d => `
+          <circle cx="${x(d.v)}" cy="${TOP + 8 + d.lane * 13}" r="4.6"
+                  fill="var(${RAMP[bin(d.v)]})" stroke="var(--surface)" stroke-width="1">
+            <title>${d.pc}: ${d.v.toFixed(1)} por 100 000</title>
+          </circle>`).join("")}
+        <text x="0" y="${h-4}" font-family="IBM Plex Mono, monospace" font-size="11"
+              fill="var(--ink-3)">por 100 k</text>
+      </svg>
+    </div>`;
+  }).join("");
+})();
+
+/* ---------- bitemporal ---------- */
+(function bitemporal(){
+  const box = document.getElementById("bt");
+  const revs = PAYLOAD.revisiones;
+  if(!revs.length){
+    box.innerHTML = `<div class="btcard"><p class="cap">Todavía no hay ningún hecho
+      revisado en el estado. Cuando una fuente corrija un valor, aquí aparecerán las
+      dos versiones con su sello <span class="mono">known_at</span>.</p></div>`;
+    return;
+  }
+  const first = revs[0], last = revs[revs.length-1];
+  const name = (byPostal[last.postal] || {}).name || last.postal;
+  box.innerHTML = `
+    <div class="btcard">
+      <span class="rev">revisión ${first.revision}</span>
+      <span class="when">known_at ${first.known_at.slice(0,23)}</span>
+      <div class="val" style="color:var(--ink-2)">${first.valor.toFixed(1)}</div>
+      <p class="cap">Lo que el gemelo creía sobre <b>${name} ${first.anio}</b> antes de
+        la corrección. Este valor sigue siendo recuperable y es el que debe usarse para
+        reevaluar cualquier predicción emitida en ese momento.</p>
+    </div>
+    <div class="btcard now">
+      <span class="rev">revisión ${last.revision}</span>
+      <span class="when">known_at ${last.known_at.slice(0,23)}</span>
+      <div class="val" style="color:var(--accent-ink)">${last.valor.toFixed(1)}</div>
+      <p class="cap">El valor vigente tras la revisión de la fuente. La consulta por
+        defecto devuelve este; pasando un corte anterior se obtiene el de la izquierda.</p>
+    </div>`;
+})();
+
+/* ---------- layers ---------- */
+document.getElementById("layers").innerHTML = PAYLOAD.capas.map(l => `
+  <div class="layer${l.estado==="pendiente" ? " pend" : ""}">
+    <span class="id">${l.id}</span>
+    <div>
+      <h3>${l.nombre}</h3>
+      <p>${l.detalle}</p>
+      <code>${l.modulo}</code>
+    </div>
+    <span class="status ${l.estado}">${l.estado}</span>
+  </div>`).join("");
+
+/* ---------- ledger ---------- */
+document.getElementById("ledger").innerHTML = PAYLOAD.procedencia.artefactos.map(a => `
+  <tr>
+    <td class="k">${a.hash}…</td>
+    <td>${a.fuente}</td>
+    <td>${a.recurso}</td>
+    <td class="tnum">${a.bytes.toLocaleString("es")}</td>
+    <td>${a.descargado}</td>
+  </tr>`).join("") ||
+  `<tr><td colspan="5">Sin descargas registradas.</td></tr>`;
+
+render();
+</script>
