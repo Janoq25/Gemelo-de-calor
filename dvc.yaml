@@ -1,0 +1,31 @@
+# Pipeline reproducible end-to-end (§12.2, §16 criterio minimo #1).
+#
+# Correr con XDT_OFFLINE=1 fuerza a que todas las etapas lean de data/raw sin
+# salir a la red: la reproducibilidad no debe depender de que un servidor
+# externo siga en pie.
+#
+# Etapas comentadas = modulos aun no implementados.
+
+stages:
+  ingest_epht_annual:
+    cmd: xdt ingest epht --measure hri_ed_rate_age_adj --temporal 2017,2018,2019,2020,2021,2022,2023
+    deps:
+      - src/xdt/ingest/epht.py
+      - src/xdt/ingest/base.py
+      - src/xdt/ingest/http.py
+    outs:
+      - data/raw/epht:
+          persist: true
+          cache: false
+
+  # ingest_epht_daily_va:      # medida 1385 - Etapa A (§5.1)
+  # ingest_epht_daily_nonva:   # medida 1238 - serie de contraste
+  # ingest_gridmet:            # 4 km diario, fuente climatica primaria
+  # ingest_eaglei:             # apagones 15 min - evento compuesto
+  # ingest_svi / places / lace / landsat
+  # harmonize:                 # crosswalks ZCTA <-> tract <-> condado (M0)
+  # features:                  # M2
+  # train_baseline_threshold:  # nivel 0 - es H0
+  # train_gbm:                 # nivel 2
+  # train_hybrid:              # nivel 3
+  # explain / fairness / validate / calibrate

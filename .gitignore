@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+.venv/
+.env
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+# DVC gestiona data/; nunca versionar contenido en git
+/data/**
+!/data/.gitkeep
+*.duckdb
+*.duckdb.wal
