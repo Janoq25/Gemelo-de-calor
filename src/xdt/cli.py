@@ -141,7 +141,9 @@ def state_history(
 
 @app.command("export")
 def export_front(
-    out: Annotated[str, typer.Option(help="Ruta del JSON de salida")] = "data/features/front_payload.json",
+    out: Annotated[
+        str, typer.Option(help="Ruta del JSON de salida")
+    ] = "data/features/front_payload.json",
 ) -> None:
     """Exporta el payload que consume la interfaz.
 
