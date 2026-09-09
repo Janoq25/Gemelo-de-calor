@@ -160,7 +160,9 @@ def connect(path: str | Path | None = None, read_only: bool = False) -> duckdb.D
 
 
 @contextmanager
-def session(path: str | Path | None = None, read_only: bool = False) -> Iterator[duckdb.DuckDBPyConnection]:
+def session(
+    path: str | Path | None = None, read_only: bool = False
+) -> Iterator[duckdb.DuckDBPyConnection]:
     con = connect(path, read_only=read_only)
     try:
         yield con

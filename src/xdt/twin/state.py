@@ -35,6 +35,17 @@ GEO_LEVELS = ("nation", "hhs_region", "state", "county", "tract", "zcta")
 REQUIRED_FACT_COLUMNS = ("geo_level", "geoid", "valid_date", "variable")
 
 
+def now_utc() -> dt.datetime:
+    """Instante actual en UTC sin tzinfo.
+
+    `known_at` se almacena SIEMPRE como UTC naive. Pasar `datetime.now()`
+    (hora local) mezcla husos y produce cortes bitemporales incoherentes: en
+    husos al oeste de UTC, un known_at "posterior" resulta anterior y la
+    guarda de revisiones antedatadas lo rechaza. Usar esta funcion.
+    """
+    return dt.datetime.now(dt.UTC).replace(tzinfo=None)
+
+
 @dataclass(frozen=True)
 class EstadoGemelo:
     """Snapshot inmutable del estado, en formato ancho.
@@ -150,10 +161,21 @@ class StateStore:
         df["value"] = pd.to_numeric(df["value"], errors="coerce")
         df["value_text"] = df["value_text"].astype("object").where(df["value_text"].notna(), None)
 
+        # `known_at` en el futuro deja el hecho invisible para toda consulta
+        # por defecto (que corta en "ahora"): se escribiria sin error y no
+        # aparecerian en ningun snapshot. Fallo silencioso, y el gemelo no
+        # puede haberse enterado de algo que aun no ha pasado.
+        stamp = known_at or now_utc()
+        if stamp > now_utc() + dt.timedelta(seconds=1):
+            raise ValueError(
+                f"known_at={stamp} esta en el futuro. El estado quedaria invisible "
+                "para las consultas por defecto. Usa xdt.twin.state.now_utc()."
+            )
+
         df["source"] = source
         df["source_version"] = source_version
         df["raw_hash"] = raw_hash
-        df["known_at"] = known_at or dt.datetime.now(dt.UTC).replace(tzinfo=None)
+        df["known_at"] = stamp
         df["fact_key"] = [
             stable_id(gl, gi, vd, var, source)
             for gl, gi, vd, var in zip(
@@ -171,9 +193,9 @@ class StateStore:
             self.con.execute(
                 """
                 CREATE OR REPLACE TEMP VIEW _latest AS
-                SELECT fact_key, value, value_text, revision
+                SELECT fact_key, value, value_text, revision, known_at
                 FROM (
-                    SELECT fact_key, value, value_text, revision,
+                    SELECT fact_key, value, value_text, revision, known_at,
                            row_number() OVER (PARTITION BY fact_key ORDER BY revision DESC) AS rn
                     FROM twin_state
                     WHERE fact_key IN (SELECT fact_key FROM _incoming)
@@ -181,6 +203,34 @@ class StateStore:
                 WHERE rn = 1
                 """
             )
+            # El eje `known_at` debe ser monotono por hecho. Una revision
+            # antedatada respecto a la que reemplaza haria que `as_of` con un
+            # corte intermedio devolviera el valor *nuevo* para un instante en
+            # que el gemelo aun no lo conocia: exactamente la fuga de
+            # informacion que este diseno existe para impedir.
+            (n_backdated,) = self.con.execute(
+                """
+                SELECT count(*) FROM _incoming i
+                JOIN _latest l USING (fact_key)
+                WHERE i.known_at < l.known_at
+                  AND (l.value IS DISTINCT FROM i.value
+                       OR l.value_text IS DISTINCT FROM i.value_text)
+                """
+            ).fetchone()
+            if n_backdated:
+                (worst,) = self.con.execute(
+                    """
+                    SELECT max(l.known_at) FROM _incoming i
+                    JOIN _latest l USING (fact_key)
+                    WHERE i.known_at < l.known_at
+                    """
+                ).fetchone()
+                raise ValueError(
+                    f"{n_backdated} hecho(s) traen known_at anterior al de la revision "
+                    f"que reemplazan (la mas reciente es {worst}). Antedatar una revision "
+                    "corrompe el eje bitemporal. Usa un known_at >= al existente, o "
+                    "carga la correccion como una fuente distinta."
+                )
             # Solo se escribe lo nuevo o lo que cambio de valor.
             self.con.execute(
                 """
@@ -237,7 +287,7 @@ class StateStore:
         """
         vf = pd.to_datetime(valid_from).date()
         vt = pd.to_datetime(valid_to).date() if valid_to is not None else vf
-        cutoff = known_at or dt.datetime.now(dt.UTC).replace(tzinfo=None)
+        cutoff = known_at or now_utc()
 
         clauses = ["geo_level = ?", "valid_date BETWEEN ? AND ?", "known_at <= ?"]
         params: list[Any] = [geo_level, vf, vt, cutoff]
@@ -287,7 +337,7 @@ class StateStore:
         )
         vf = pd.to_datetime(valid_from).date()
         vt = pd.to_datetime(valid_to).date() if valid_to is not None else vf
-        cutoff = known_at or dt.datetime.now(dt.UTC).replace(tzinfo=None)
+        cutoff = known_at or now_utc()
 
         if long.empty:
             wide = pd.DataFrame(

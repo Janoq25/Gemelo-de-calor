@@ -34,6 +34,7 @@ ingesta sistematica (checklist §19).
 from __future__ import annotations
 
 import datetime as dt
+import json
 from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -41,7 +42,7 @@ from typing import Any
 import pandas as pd
 
 from xdt.ingest.base import Connector
-from xdt.ingest.http import RawArtifact
+from xdt.ingest.http import InvalidBody, RawArtifact, RetryableBody
 
 # geographicTypeId de EPHT -> geo_level canonico del gemelo
 GEO_TYPE_TO_LEVEL = {1: "state", 2: "county", 13: "hhs_region"}
@@ -124,6 +125,7 @@ class EphtConnector(Connector):
         super().__init__(*args, **kwargs)
         if self.settings.epht_token:
             self.client.headers["Authorization"] = f"Bearer {self.settings.epht_token}"
+        self.client.body_check = _check_epht_body
 
     # ------------------------------------------------------------ descubrir
     def discover(self, measure_id: int, is_smoothed: int = 0) -> dict[str, Any]:
@@ -276,3 +278,33 @@ def _parse_temporal(temporal: Any, temporal_id: Any) -> dt.date | None:
         return pd.to_datetime(s).date()
     except (ValueError, TypeError):
         return None
+
+
+def _check_epht_body(content: bytes) -> None:
+    """Detecta el sobre de error que EPHT devuelve DENTRO de un HTTP 200.
+
+    La API no usa el codigo HTTP para senalar el limite de tasa: responde 200
+    con un cuerpo `{"code":429,"status":"Too Many Requests",...}`. Sin esta
+    comprobacion el cliente cachearia ese documento en data/raw como si fuera
+    dato, y `normalize()` produciria cero filas sin que nada fallara. Es
+    exactamente la clase de fallo silencioso contra la que el plan pide tests
+    de contrato (§12.2).
+    """
+    try:
+        payload = json.loads(content)
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        return  # no es JSON; no es asunto de este validador
+
+    if not isinstance(payload, dict):
+        return
+    code = payload.get("code")
+    if not isinstance(code, int) or code < 400:
+        return
+
+    msg = payload.get("message", "")
+    if code == 429:
+        raise RetryableBody(
+            f"EPHT limita la tasa (429 en cuerpo 200): {msg}. "
+            "Solicita el token gratuito a trackingsupport@cdc.gov."
+        )
+    raise InvalidBody(f"EPHT devolvio error {code} en cuerpo 200: {msg}")

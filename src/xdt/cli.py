@@ -34,7 +34,10 @@ def info() -> None:
     t = Table(title="xai-dt-heat", show_header=False)
     t.add_row("raiz de datos", str(s.data_root))
     t.add_row("base DuckDB", str(s.twin_db_path))
-    t.add_row("token EPHT", "presente" if s.epht_token else "[red]ausente[/] (429 tras ~8 peticiones)")
+    t.add_row(
+        "token EPHT",
+        "presente" if s.epht_token else "[red]ausente[/] (429 tras ~8 peticiones)",
+    )
     t.add_row("modo offline", str(s.offline))
     t.add_row("version de codigo", code_version())
     console.print(t)
@@ -43,7 +46,9 @@ def info() -> None:
 @ingest_app.command("epht")
 def ingest_epht(
     measure: Annotated[str, typer.Option(help=f"Una de: {', '.join(MEASURES)}")],
-    temporal: Annotated[str, typer.Option(help="Periodo(s), separados por coma. Ej: 2020,2021,2022")] = "ALL",
+    temporal: Annotated[
+        str, typer.Option(help="Periodo(s) separados por coma. Ej: 2020,2021,2022")
+    ] = "ALL",
     refresh: Annotated[bool, typer.Option(help="Ignora la cache y vuelve a descargar")] = False,
 ) -> None:
     """Ingesta una medida de EPHT al estado del gemelo."""
@@ -97,7 +102,10 @@ def state_show(
     geo_level: Annotated[str, typer.Option()] = "state",
     valid_from: Annotated[str, typer.Option()] = "2023-01-01",
     valid_to: Annotated[str | None, typer.Option()] = None,
-    known_at: Annotated[str | None, typer.Option(help="Viaje en el tiempo: estado tal como se conocia en esta fecha")] = None,
+    known_at: Annotated[
+        str | None,
+        typer.Option(help="Viaje en el tiempo: estado conocido en esta fecha"),
+    ] = None,
     limit: Annotated[int, typer.Option()] = 20,
 ) -> None:
     """Imprime un snapshot del estado, opcionalmente en un corte pasado."""

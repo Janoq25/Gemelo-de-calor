@@ -21,6 +21,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,21 @@ RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 
 class OfflineCacheMiss(RuntimeError):
     """Se pidio un recurso no cacheado estando en modo offline."""
+
+
+class RetryableBody(RuntimeError):
+    """El cuerpo indica un fallo transitorio pese a un codigo HTTP de exito.
+
+    Algunos servicios senalan el limite de tasa DENTRO de una respuesta 200.
+    EPHT lo hace: devuelve HTTP 200 con {"code":429,"status":"Too Many
+    Requests"}. Sin esta comprobacion, el cliente cachearia el documento de
+    error como si fuera dato y el parser produciria silenciosamente cero
+    filas.
+    """
+
+
+class InvalidBody(RuntimeError):
+    """El cuerpo es un error permanente: no reintentar, no cachear."""
 
 
 @dataclass(frozen=True)
@@ -66,11 +82,16 @@ class CachedClient:
     """Cliente HTTP idempotente con cache en data/raw."""
 
     def __init__(self, source: str, settings: Settings | None = None,
-                 base_url: str = "", headers: dict[str, str] | None = None):
+                 base_url: str = "", headers: dict[str, str] | None = None,
+                 body_check: Callable[[bytes], None] | None = None):
         self.source = source
         self.settings = settings or get_settings()
         self.base_url = base_url.rstrip("/")
         self.headers = {"User-Agent": self.settings.user_agent, **(headers or {})}
+        # Validador opcional del cuerpo. Debe lanzar RetryableBody o
+        # InvalidBody. Se ejecuta ANTES de escribir en cache, para que un
+        # documento de error nunca acabe en data/raw.
+        self.body_check = body_check
         self._client: httpx.Client | None = None
 
     # ----------------------------------------------------------------- cache
@@ -95,6 +116,23 @@ class CachedClient:
             fetched_at=dt.datetime.fromisoformat(m["fetched_at"]),
             from_cache=True,
         )
+
+    def _cache_entry_is_valid(self, art: RawArtifact) -> bool:
+        """Revalida una entrada de cache antes de servirla.
+
+        Una entrada escrita por una version anterior del cliente puede
+        contener un sobre de error (p.ej. el 429 que EPHT devuelve dentro de
+        un HTTP 200). Servirla indefinidamente propagaria el fallo para
+        siempre; tratarla como fallo de cache la deja auto-repararse en la
+        siguiente descarga.
+        """
+        if self.body_check is None:
+            return True
+        try:
+            self.body_check(art.bytes())
+        except (RetryableBody, InvalidBody):
+            return False
+        return True
 
     def _write_cache(
         self, request_key: str, resource: str, params: dict[str, Any],
@@ -176,7 +214,7 @@ class CachedClient:
 
         if not refresh:
             cached = self._read_cache(request_key)
-            if cached is not None:
+            if cached is not None and self._cache_entry_is_valid(cached):
                 return cached
 
         if self.settings.offline:
@@ -204,6 +242,17 @@ class CachedClient:
                 raise last_exc
 
             resp.raise_for_status()
+
+            if self.body_check is not None:
+                try:
+                    self.body_check(resp.content)
+                except RetryableBody as exc:
+                    last_exc = exc
+                    if attempt < self.settings.http_max_retries - 1:
+                        time.sleep(self._backoff(attempt, resp.headers.get("Retry-After")))
+                        continue
+                    raise
+
             return self._write_cache(
                 request_key,
                 logical,

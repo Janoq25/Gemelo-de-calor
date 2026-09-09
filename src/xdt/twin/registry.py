@@ -25,6 +25,7 @@ import pandas as pd
 
 from xdt.hashing import stable_id
 from xdt.storage import code_version
+from xdt.twin.state import now_utc
 
 
 @dataclass(frozen=True)
@@ -75,7 +76,7 @@ class PredictionRegistry:
         if not predictions:
             return 0
 
-        now = dt.datetime.now(dt.UTC).replace(tzinfo=None)
+        now = now_utc()
         cv = code_version()
         rows = []
         for p in predictions:
@@ -266,7 +267,7 @@ class ObservationStore:
         df["censor_hi"] = pd.to_numeric(df["censor_hi"], errors="coerce")
         df["censored"] = df["censored"].fillna(False).astype(bool)
         df["source"] = source
-        df["known_at"] = known_at or dt.datetime.now(dt.UTC).replace(tzinfo=None)
+        df["known_at"] = known_at or now_utc()
         df["obs_key"] = [
             stable_id(gl, gi, td, q, source)
             for gl, gi, td, q in zip(
@@ -324,7 +325,7 @@ class ObservationStore:
         known_at: dt.datetime | None = None,
     ) -> pd.DataFrame:
         clauses = ["known_at <= ?"]
-        params: list[Any] = [known_at or dt.datetime.now(dt.UTC).replace(tzinfo=None)]
+        params: list[Any] = [known_at or now_utc()]
         if quantity:
             clauses.append("quantity = ?")
             params.append(quantity)

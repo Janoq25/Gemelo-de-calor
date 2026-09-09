@@ -247,3 +247,91 @@ def test_fixture_refleja_la_cobertura_verificada():
     az = next(r for r in EPHT_FIXTURE["tableResult"] if r["geoId"] == "04")
     assert az["dataValue"] == "48.1"
     assert json.loads(json.dumps(EPHT_FIXTURE))  # serializable
+
+
+# --------------------------------------------- error 429 dentro de HTTP 200
+EPHT_429_BODY = {
+    "apiToken": None, "code": 429, "errorTypeId": 8,
+    "message": "Server has serviced too many non-token requests",
+    "status": "Too Many Requests",
+}
+
+
+@respx.mock
+def test_epht_detecta_429_camuflado_en_un_http_200(settings, monkeypatch):
+    """EPHT no usa el codigo HTTP para el limite de tasa: devuelve 200 con
+    {"code":429} en el cuerpo. Sin detectarlo, el cliente cachearia el
+    documento de error como si fuera dato y normalize() daria cero filas sin
+    que nada fallara."""
+    monkeypatch.setattr("xdt.config.get_settings", lambda: settings)
+    route = respx.get(url__regex=r".*getCoreHolder.*").mock(
+        side_effect=[
+            httpx.Response(200, json=EPHT_429_BODY),
+            httpx.Response(200, json=EPHT_FIXTURE),
+        ]
+    )
+
+    conn = EphtConnector(settings=settings)
+    facts = conn.normalize(conn.fetch(measure="hri_ed_rate_age_adj", temporal=2023))
+
+    assert route.call_count == 2  # reintento tras el 429 camuflado
+    assert len(facts) == 3
+
+
+@respx.mock
+def test_el_documento_de_error_nunca_llega_a_la_cache(settings, monkeypatch):
+    """data/raw es la fuente de verdad del pipeline offline. Un sobre de error
+    guardado ahi corromperia todas las ejecuciones posteriores."""
+    monkeypatch.setattr("xdt.config.get_settings", lambda: settings)
+    respx.get(url__regex=r".*getCoreHolder.*").mock(
+        return_value=httpx.Response(200, json=EPHT_429_BODY)
+    )
+
+    conn = EphtConnector(settings=settings)
+    with pytest.raises(Exception, match="429|tasa"):
+        conn.fetch(measure="hri_ed_rate_age_adj", temporal=2023)
+
+    cached = list((settings.raw_dir / "epht").rglob("*.bin"))
+    assert cached == [], "se cacheo un documento de error"
+
+
+@respx.mock
+def test_error_permanente_en_cuerpo_200_no_se_reintenta(settings, monkeypatch):
+    monkeypatch.setattr("xdt.config.get_settings", lambda: settings)
+    route = respx.get(url__regex=r".*getCoreHolder.*").mock(
+        return_value=httpx.Response(
+            200,
+            json={"code": 400, "status": "Bad Request", "message": "measureId NaN"},
+        )
+    )
+
+    conn = EphtConnector(settings=settings)
+    with pytest.raises(Exception, match="400"):
+        conn.fetch(measure="hri_ed_rate_age_adj", temporal=2023)
+    assert route.call_count == 1
+
+
+@respx.mock
+def test_entrada_de_cache_envenenada_se_autorrepara(settings, monkeypatch):
+    """Una entrada escrita por una version anterior del cliente puede contener
+    un sobre de error. Servirla indefinidamente propagaria el fallo para
+    siempre; debe tratarse como fallo de cache y volver a descargarse."""
+    monkeypatch.setattr("xdt.config.get_settings", lambda: settings)
+
+    # Simula cache envenenada: se escribe sin validador.
+    plain = CachedClient(source="epht", settings=settings,
+                         base_url=EphtConnector.base_url)
+    respx.get(url__regex=r".*getCoreHolder.*").mock(
+        return_value=httpx.Response(200, json=EPHT_429_BODY)
+    )
+    plain.get("/getCoreHolder/440/1/1/ALL/0/2023/0/0",
+              resource="epht:getCoreHolder:440:2023")
+    assert list((settings.raw_dir / "epht").rglob("*.bin"))  # quedo escrita
+
+    # El conector, con validador, la descarta y re-descarga.
+    respx.get(url__regex=r".*getCoreHolder.*").mock(
+        return_value=httpx.Response(200, json=EPHT_FIXTURE)
+    )
+    conn = EphtConnector(settings=settings)
+    facts = conn.normalize(conn.fetch(measure="hri_ed_rate_age_adj", temporal=2023))
+    assert len(facts) == 3

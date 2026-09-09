@@ -11,7 +11,7 @@ equidad**. Implementa las capas L0–L5 descritas en `plan_gemelo_digital_calor.
 ```bash
 uv sync --python 3.12          # crea .venv e instala el nucleo
 cp .env.example .env           # y rellena XDT_EPHT_TOKEN cuando llegue
-uv run pytest                  # 53 tests, sin red
+uv run pytest                  # 60 tests, sin red
 uv run xdt info
 ```
 
@@ -112,6 +112,7 @@ que no está en el repositorio.
 | `stratificationLevelId` = **1** para nivel estatal (medida 440) | Verificado |
 | Cobertura medida 440: **2023 → 16 estados** (4.2–57.7), **2022 → 26 estados** (4.6–47.0) | Confirma §15.2 y resuelve un pendiente del checklist §19: **los años previos sí tienen mayor cobertura** |
 | El sobre de `getCoreHolder` trae ~12 buckets de resultado | Las series diarias no usan `tableResult`. El parser recorre varios buckets |
+| **EPHT señala el 429 dentro de un cuerpo HTTP 200** | El más peligroso. Un cliente que solo mire `status_code` cachea el documento de error como si fuera dato y `normalize()` devuelve cero filas **sin que nada falle**. `ingest/http.py` valida el cuerpo antes de escribir en caché, y revalida al leerla |
 
 ## Siguientes pasos
 
@@ -133,3 +134,6 @@ En orden, según el cronograma (§13) y el principio de cerrar el circuito pront
   `uv run pytest -m contract`. Conviene un cron semanal, no cada commit.
 - Los escenarios son contrafactuales **del modelo**, no del mundo (§15.6). El código
   no afirma causalidad y el lenguaje de los reportes tampoco debe hacerlo.
+- `known_at` se guarda **siempre** en UTC naive: usar `xdt.twin.state.now_utc()`, nunca
+  `datetime.now()`. El estado rechaza revisiones antedatadas y hechos fechados en el
+  futuro, porque ambas cosas corrompen el eje bitemporal en silencio.

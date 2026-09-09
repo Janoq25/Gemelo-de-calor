@@ -173,3 +173,36 @@ def test_coverage_reporta_huecos(con, facts_day1, t0):
     row = cov.iloc[0]
     assert row["n_geoids"] == 4
     assert row["n_null"] == 1
+
+
+def test_rechaza_revision_antedatada(con, facts_day1, t0, t1):
+    """Una revision con known_at anterior al de la revision que reemplaza
+    corromperia el eje bitemporal: `as_of` con un corte intermedio devolveria
+    el valor nuevo para un instante en que el gemelo aun no lo conocia."""
+    store = StateStore(con)
+    store.put_facts(facts_day1, source="epht", known_at=t1)
+
+    antedatada = facts_day1.copy()
+    antedatada.loc[antedatada["geoid"] == "04", "value"] = 49.4
+    with pytest.raises(ValueError, match="antedatar|anterior al de la revision"):
+        store.put_facts(antedatada, source="epht", known_at=t0)
+
+
+def test_reingesta_identica_con_known_at_anterior_no_falla(con, facts_day1, t0, t1):
+    """La guarda solo aplica a cambios de valor. Reprocesar el mismo crudo con
+    un known_at antiguo es inofensivo y no debe romper el pipeline."""
+    store = StateStore(con)
+    store.put_facts(facts_day1, source="epht", known_at=t1)
+    stats = store.put_facts(facts_day1, source="epht", known_at=t0)
+    assert stats["written"] == 0
+
+
+def test_rechaza_known_at_en_el_futuro(con, facts_day1):
+    """Un hecho fechado en el futuro se escribiria sin error pero seria
+    invisible para toda consulta que corte en "ahora". Fallo silencioso."""
+    from xdt.twin.state import now_utc
+
+    store = StateStore(con)
+    futuro = now_utc() + dt.timedelta(days=1)
+    with pytest.raises(ValueError, match="futuro"):
+        store.put_facts(facts_day1, source="epht", known_at=futuro)
