@@ -182,6 +182,34 @@ svg.usmap text.lbl{font-family:"IBM Plex Mono",monospace;font-size:10.5px;
 footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
   font-size:12.5px;color:var(--ink-3);display:flex;gap:16px;flex-wrap:wrap}
 
+/* ---------- educational guide & stats explainers ---------- */
+.guia-box{background:var(--surface);border:1px solid var(--rule);border-radius:6px;
+  padding:22px 24px;margin-bottom:34px;box-shadow:var(--shadow)}
+.guia-box-header{display:flex;align-items:baseline;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--rule-2);padding-bottom:12px;margin-bottom:16px}
+.guia-box-header h2{font-size:18.5px;font-weight:700;color:var(--ink);margin:0;letter-spacing:-.01em}
+.guia-box-header .tag-pill{font-family:"IBM Plex Mono",monospace;font-size:11px;
+  background:var(--accent-wash);color:var(--accent-ink);padding:3px 8px;border-radius:3px;font-weight:600}
+.guia-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.guia-col{background:var(--surface-2);border:1px solid var(--rule);border-radius:5px;
+  padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.guia-col h3{font-size:14.5px;font-weight:700;color:var(--ink);display:flex;align-items:center;gap:8px}
+.guia-col h3 span.num{display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:22px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:11px;font-family:"IBM Plex Mono",monospace;font-weight:600}
+.guia-col p{font-size:13px;line-height:1.52;color:var(--ink-2);margin:0}
+.guia-col ul{margin:4px 0 0;padding-left:18px;font-size:12.5px;color:var(--ink-2);line-height:1.48}
+.guia-col li{margin-bottom:6px}
+.guia-col b{color:var(--ink)}
+
+.inline-explainer{background:var(--surface-2);border:1px solid var(--rule);
+  border-left:3px solid var(--accent);border-radius:4px;padding:12px 15px;
+  margin-top:14px;font-size:13px;color:var(--ink-2);line-height:1.52}
+.inline-explainer b{color:var(--ink)}
+.inline-explainer .title{font-family:"IBM Plex Mono",monospace;font-size:10.5px;
+  font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--accent-ink);
+  display:block;margin-bottom:4px}
+
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -196,6 +224,41 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
 </header>
 
 <div class="wrap">
+
+  <!-- ==================== GUÍA PARA NUEVOS VISITANTES ==================== -->
+  <section id="guia" class="guia-box">
+    <div class="guia-box-header">
+      <h2>¿Cómo funciona este gemelo digital y cómo se interpretan sus datos?</h2>
+      <span class="tag-pill">Guía para nuevos visitantes</span>
+    </div>
+    <div class="guia-grid">
+      <div class="guia-col">
+        <h3><span class="num">1</span> Funcionamiento General</h3>
+        <p>Este sistema es un <b>gemelo digital de salud climática</b>: una réplica computacional viva diseñada para modelar y anticipar el riesgo acumulado de visitas a urgencias hospitalarias provocadas por la coincidencia de <b>olas de calor extremo</b> y <b>cortes en la red eléctrica</b>.</p>
+        <p>A diferencia de un panel de gráficos estático, un gemelo digital mantiene un <b>estado continuo del territorio</b> (capas L0 a L5): integra clima satelital, cortes de suministro, comorbilidades y demografía, preservando la memoria histórica y permitiendo simular escenarios de contingencia comunitaria.</p>
+      </div>
+
+      <div class="guia-col">
+        <h3><span class="num">2</span> Diccionario de Números y Estadísticas</h3>
+        <ul>
+          <li><b>Tasa por 100 000 hab. (Medida 440):</b> Número de visitas de emergencia hospitalaria debidas a golpes de calor e hipertermia por cada 100 000 residentes.</li>
+          <li><b>Ajustada por edad:</b> Ponderación epidemiológica para que estados con muchos adultos mayores (más susceptibles al calor) puedan compararse justamente con estados de población joven.</li>
+          <li><b>Mediana vs. Razón Máx/Mín:</b> En 2023 la mediana fue <b>26.9</b>, pero la razón máx/mín fue de <b>13.7×</b> (Louisiana sufrió 57.7 vs Rhode Island 4.2: una brecha territorial de más de diez veces).</li>
+          <li><b>Trama rayada (Sin reporte):</b> En 2023 solo <b>16 estados</b> reportaron al CDC EPHT. La trama no es un error de carga: documenta la fragmentación real de la vigilancia sanitaria federal.</li>
+        </ul>
+      </div>
+
+      <div class="guia-col">
+        <h3><span class="num">3</span> Bitemporalidad: Dos Relojes</h3>
+        <p>Cada observación en el gemelo posee dos coordenadas temporales inmutables:</p>
+        <ul>
+          <li><b>valid_date:</b> La fecha en que el fenómeno sucedió en el mundo real (ej. verano de 2023).</li>
+          <li><b>known_at:</b> El instante exacto en que el gemelo conoció el dato (ej. septiembre de 2026).</li>
+        </ul>
+        <p><b>¿Por qué no se sobrescribe?</b> Cuando una agencia gubernamental revisa o corrige un valor histórico, el gemelo no borra el anterior. Esto permite auditar qué sabía el sistema en cualquier fecha del pasado, impidiendo la <i>fuga de datos</i>.</p>
+      </div>
+    </div>
+  </section>
 
   <section id="mapa" style="margin-top:0">
     <div class="shead">
@@ -219,6 +282,11 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
           <g id="states"></g>
           <g id="labels"></g>
         </svg>
+
+        <div class="inline-explainer">
+          <span class="title">Cómo interactuar con el mapa</span>
+          Pasa el cursor o haz clic sobre cualquier estado para ver su serie histórica en el panel derecho. Los botones superiores (2022 / 2023) alternan el año de observación del CDC EPHT. Los tonos <b>cálidos y oscuros</b> denotan mayor saturación hospitalaria por calor, mientras que la <b>trama diagonal gris</b> identifica estados que no reportaron datos en ese periodo.
+        </div>
       </div>
 
       <div class="rail">
@@ -229,6 +297,12 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
           <div class="bignum" id="nrep">—</div>
           <div class="bigsub" id="nrepsub"></div>
           <div class="delta" id="delta"></div>
+          <div class="inline-explainer" style="margin-top:10px;padding:9px 12px;font-size:12px">
+            <span class="title">Guía de las estadísticas</span>
+            • <b>Mediana:</b> El punto medio nacional (la mitad de los estados reportantes está por debajo y la otra mitad por encima).<br>
+            • <b>Rango (mín–máx):</b> Extremos observados ese año.<br>
+            • <b>Razón máx/mín:</b> Mide la brecha de riesgo relativo entre el estado con mayor y menor afectación.
+          </div>
         </div>
 
         <div class="panel readout" id="readout"></div>
@@ -251,6 +325,11 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
       sistemas estatales de vigilancia (riesgo R2b). Por eso la identificación de
       modificadores se restringe a variación intra-estatal.</p>
     <div class="spread" id="spread"></div>
+
+    <div class="inline-explainer">
+      <span class="title">Interpretación epidemiológica de la dispersión</span>
+      Cada punto representa un estado. La dispersión horizontal ilustra la profunda brecha en morbilidad: en 2023 Louisiana reportó <b>57.7</b> hospitalizaciones por 100k hab. frente a <b>4.2</b> en Rhode Island (13.7 veces más). Esta divergencia obedece a factores climáticos directos combinados con vulnerabilidad social, cobertura de aire acondicionado y diferencias en la codificación clínica de admisiones.
+    </div>
   </section>
 
   <section id="bitemporal">
@@ -263,12 +342,21 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
       <b>no se sobrescribe</b>. Sin esto, evaluar hoy una predicción emitida en el pasado
       usaría datos que entonces no existían — fuga de información.</p>
     <div class="bt" id="bt"></div>
+
+    <div class="inline-explainer">
+      <span class="title">Caso de estudio en pantalla: Arizona 2023</span>
+      Observa las tarjetas superiores: la <b>revisión 0</b> (48.1) fue la cifra inicialmente publicada por el CDC. La <b>revisión 1</b> (49.4) es la corrección consolidada posterior. El gemelo conserva ambas con su marca de tiempo exacta. Si en 2024 un algoritmo hubiera emitido una alerta temprana, debe evaluarse frente a 48.1 (lo que existía en ese momento), no frente a 49.4. Esta propiedad garantiza rigor científico inexpugnable.
+    </div>
   </section>
 
   <section id="capas">
     <div class="shead">
       <h2>Estado de las seis capas</h2>
       <span class="note">§6 del plan</span>
+    </div>
+    <div class="inline-explainer" style="margin-top:0;margin-bottom:14px">
+      <span class="title">El flujo cibernético de las 6 capas</span>
+      <b>L0 (Trazabilidad)</b> sella criptográficamente cada cálculo → <b>L1 (Estado)</b> guarda la memoria bitemporal → <b>L2 (Sincronización)</b> descarga datos de satélites y red → <b>L3 (IA y SHAP)</b> calculará el riesgo probabilístico → <b>L4 (Escenarios)</b> simula cortes de luz y olas de calor → <b>L5 (Calibración)</b> compara predicciones con la realidad para auto-corregirse.
     </div>
     <div class="layers" id="layers"></div>
   </section>
@@ -285,6 +373,11 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
         <thead><tr><th>Hash</th><th>Fuente</th><th>Recurso</th><th>Bytes</th><th>Descargado</th></tr></thead>
         <tbody id="ledger"></tbody>
       </table>
+    </div>
+
+    <div class="inline-explainer">
+      <span class="title">¿Por qué importa el Hash SHA-256?</span>
+      Es la <b>huella dactilar digital inmutable</b> de cada paquete descargado del CDC. Si una sola cifra del archivo original fuera alterada, el hash cambiaría y el sistema invalidaría el estado. Garantiza cadena de custodia total ante cualquier comité o auditor.
     </div>
   </section>
 
