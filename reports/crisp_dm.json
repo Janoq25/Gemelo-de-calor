@@ -1,0 +1,467 @@
+{
+  "esquema_cv": "dejar fuera una region HHS",
+  "pliegues": [
+    "region 6",
+    "region 9"
+  ],
+  "split_temporal": {
+    "corte": "2023-08-01",
+    "inicio_prueba": "2023-08-08",
+    "hueco_dias": 7,
+    "n_train": 184,
+    "n_test": 108
+  },
+  "elegido": "lightgbm",
+  "mejor_auc": "lightgbm",
+  "auc_ci": {
+    "umbral": [
+      0.6020031628887718,
+      0.5091642379414388,
+      0.6948420878361047
+    ],
+    "logistica": [
+      0.5414865577227201,
+      0.4418729576716344,
+      0.6411001577738059
+    ],
+    "bosque": [
+      0.5336847654190827,
+      0.4413570412793495,
+      0.6260124895588159
+    ],
+    "lightgbm": [
+      0.8037954665260938,
+      0.7215177084020463,
+      0.8860732246501413
+    ]
+  },
+  "hiperparametros_finales": {
+    "umbral": {},
+    "logistica": {
+      "logisticregression__C": 0.002330752659874609,
+      "logisticregression__class_weight": null
+    },
+    "bosque": {
+      "class_weight": null,
+      "max_depth": 6,
+      "max_features": 0.5,
+      "min_samples_leaf": 29,
+      "n_estimators": 254
+    },
+    "lightgbm": {
+      "colsample_bytree": 0.8460149460908704,
+      "learning_rate": 0.07528447426719884,
+      "min_child_samples": 74,
+      "n_estimators": 395,
+      "num_leaves": 46,
+      "reg_lambda": 1.1006883161082324,
+      "subsample": 0.9816529688062068,
+      "subsample_freq": 1
+    }
+  },
+  "hiperparametros_por_pliegue": {
+    "umbral": [
+      {},
+      {}
+    ],
+    "logistica": [
+      {
+        "logisticregression__C": 0.002330752659874609,
+        "logisticregression__class_weight": null
+      },
+      {
+        "logisticregression__C": 0.01444218248163037,
+        "logisticregression__class_weight": null
+      }
+    ],
+    "bosque": [
+      {
+        "class_weight": "balanced_subsample",
+        "max_depth": 8,
+        "max_features": "sqrt",
+        "min_samples_leaf": 25,
+        "n_estimators": 307
+      },
+      {
+        "class_weight": null,
+        "max_depth": 6,
+        "max_features": "sqrt",
+        "min_samples_leaf": 26,
+        "n_estimators": 489
+      }
+    ],
+    "lightgbm": [
+      {
+        "colsample_bytree": 0.7917737426759304,
+        "learning_rate": 0.08516790704394848,
+        "min_child_samples": 39,
+        "n_estimators": 103,
+        "num_leaves": 46,
+        "reg_lambda": 0.5774295211691866,
+        "subsample": 0.7295347245811439,
+        "subsample_freq": 1
+      },
+      {
+        "colsample_bytree": 0.7917737426759304,
+        "learning_rate": 0.08516790704394848,
+        "min_child_samples": 39,
+        "n_estimators": 103,
+        "num_leaves": 46,
+        "reg_lambda": 0.5774295211691866,
+        "subsample": 0.7295347245811439,
+        "subsample_freq": 1
+      }
+    ]
+  },
+  "por_pliegue": {
+    "umbral": [
+      {
+        "pliegue": "region 6",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.8474137931034482,
+        "ap": 0.4191047754329004,
+        "brier": 0.07627617634568568,
+        "prevalencia": 0.05228758169934641
+      },
+      {
+        "pliegue": "region 9",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.7804232804232805,
+        "ap": 0.38582593411019794,
+        "brier": 0.15138052080924416,
+        "prevalencia": 0.17647058823529413
+      }
+    ],
+    "logistica": [
+      {
+        "pliegue": "region 6",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.85,
+        "ap": 0.5270634438025742,
+        "brier": 0.060131303218730156,
+        "prevalencia": 0.05228758169934641
+      },
+      {
+        "pliegue": "region 9",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.7845385067607289,
+        "ap": 0.37887654507790614,
+        "brier": 0.14855573103153696,
+        "prevalencia": 0.17647058823529413
+      }
+    ],
+    "bosque": [
+      {
+        "pliegue": "region 6",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.8439655172413792,
+        "ap": 0.2817366108694582,
+        "brier": 0.16881900289334256,
+        "prevalencia": 0.05228758169934641
+      },
+      {
+        "pliegue": "region 9",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.761904761904762,
+        "ap": 0.35816993516521173,
+        "brier": 0.14872699907160655,
+        "prevalencia": 0.17647058823529413
+      }
+    ],
+    "lightgbm": [
+      {
+        "pliegue": "region 6",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.8206896551724138,
+        "ap": 0.35036797649167195,
+        "brier": 0.043079618271780806,
+        "prevalencia": 0.05228758169934641
+      },
+      {
+        "pliegue": "region 9",
+        "n_train": 153,
+        "n_test": 153,
+        "auc": 0.7736625514403292,
+        "ap": 0.3805077911076494,
+        "brier": 0.13331525685844042,
+        "prevalencia": 0.17647058823529413
+      }
+    ]
+  },
+  "rendimiento": [
+    {
+      "modelo": "umbral",
+      "AUC (OOF)": 0.6020031628887718,
+      "IC95 DeLong": "0,509–0,695",
+      "IC95 bootstrap bloques": "0,457–0,707",
+      "AUC medio pliegues": 0.8139185367633643,
+      "desv. pliegues": 0.04736944579131002,
+      "AP": 0.20751688301724805,
+      "Brier": 0.11382834857746492,
+      "AUC temporal": 0.7352226720647773
+    },
+    {
+      "modelo": "logistica",
+      "AUC (OOF)": 0.5414865577227201,
+      "IC95 DeLong": "0,442–0,641",
+      "IC95 bootstrap bloques": "0,404–0,651",
+      "AUC medio pliegues": 0.8172692533803645,
+      "desv. pliegues": 0.04628826577608592,
+      "AP": 0.177860714806956,
+      "Brier": 0.10434351712513354,
+      "AUC temporal": 0.7489878542510121
+    },
+    {
+      "modelo": "bosque",
+      "AUC (OOF)": 0.5336847654190827,
+      "IC95 DeLong": "0,441–0,626",
+      "IC95 bootstrap bloques": "0,399–0,648",
+      "AUC medio pliegues": 0.8029351395730706,
+      "desv. pliegues": 0.05802571656781225,
+      "AP": 0.15712685418687797,
+      "Brier": 0.15877300098247457,
+      "AUC temporal": 0.7668016194331984
+    },
+    {
+      "modelo": "lightgbm",
+      "AUC (OOF)": 0.8037954665260938,
+      "IC95 DeLong": "0,722–0,886",
+      "IC95 bootstrap bloques": "0,691–0,883",
+      "AUC medio pliegues": 0.7971761033063716,
+      "desv. pliegues": 0.033253183948520164,
+      "AP": 0.35615734136260746,
+      "Brier": 0.08819743756511061,
+      "AUC temporal": 0.7635627530364373
+    }
+  ],
+  "delong_holm": [
+    {
+      "comparación": "lightgbm vs umbral",
+      "AUC A": 0.8037954665260938,
+      "AUC B": 0.6020031628887718,
+      "diferencia": 0.20179230363732203,
+      "IC95 dif.": "0,108–0,296",
+      "z": 4.204368844110282,
+      "p": 2.6181169875083424e-05,
+      "p_holm": 2.6181169875083424e-05,
+      "rechaza_H0": true
+    },
+    {
+      "comparación": "lightgbm vs logistica",
+      "AUC A": 0.8037954665260938,
+      "AUC B": 0.5414865577227201,
+      "diferencia": 0.26230890880337365,
+      "IC95 dif.": "0,152–0,372",
+      "z": 4.679961670042958,
+      "p": 2.8692855476559766e-06,
+      "p_holm": 5.738571095311953e-06,
+      "rechaza_H0": true
+    },
+    {
+      "comparación": "lightgbm vs bosque",
+      "AUC A": 0.8037954665260938,
+      "AUC B": 0.5336847654190827,
+      "diferencia": 0.2701107011070111,
+      "IC95 dif.": "0,164–0,376",
+      "z": 5.011201774872996,
+      "p": 5.409116098832327e-07,
+      "p_holm": 1.622734829649698e-06,
+      "rechaza_H0": true
+    }
+  ],
+  "friedman": {
+    "statistic": 5.399999999999999,
+    "p_value": 0.1447435794148559,
+    "mean_ranks": {
+      "umbral": 2.0,
+      "logistica": 1.0,
+      "bosque": 3.5,
+      "lightgbm": 3.5
+    },
+    "critical_difference": 3.316605756983415,
+    "n_blocks": 2
+  },
+  "nadeau_bengio_dm": [
+    {
+      "comparación": "lightgbm vs umbral",
+      "Δ AUC medio pliegues": -0.016742433456992833,
+      "t Nadeau–Bengio": -0.9683965788029705,
+      "p NB": 0.5102203156251414,
+      "DM (Brier diario)": -2.475957764690839,
+      "p DM": 0.013287929633235137
+    },
+    {
+      "comparación": "lightgbm vs logistica",
+      "Δ AUC medio pliegues": -0.020093150073992927,
+      "t Nadeau–Bengio": -1.258602634989876,
+      "p NB": 0.4274251514162028,
+      "DM (Brier diario)": -2.477720488035847,
+      "p DM": 0.01322246837237534
+    },
+    {
+      "comparación": "lightgbm vs bosque",
+      "Δ AUC medio pliegues": -0.005759036266699102,
+      "t Nadeau–Bengio": -0.18981641859002493,
+      "p NB": 0.8805798356412885,
+      "DM (Brier diario)": -4.839133486554159,
+      "p DM": 1.3040644051098584e-06
+    }
+  ],
+  "permutacion_calibracion": [
+    {
+      "modelo": "umbral",
+      "AUC": 0.6020031628887718,
+      "p permutación": 0.0033222591362126247,
+      "pendiente calibración": 0.18714568798182585,
+      "intercepto": -0.11266968558421388,
+      "z Spiegelhalter": 2.6821234695402443,
+      "p Spiegelhalter": 0.007315645373552267
+    },
+    {
+      "modelo": "logistica",
+      "AUC": 0.54148655772272,
+      "p permutación": 0.009966777408637873,
+      "pendiente calibración": 0.2502204282036674,
+      "intercepto": -0.061888480566363965,
+      "z Spiegelhalter": 0.19645640612643414,
+      "p Spiegelhalter": 0.8442529506091456
+    },
+    {
+      "modelo": "bosque",
+      "AUC": 0.5336847654190827,
+      "p permutación": 0.0033222591362126247,
+      "pendiente calibración": 0.006200354714147715,
+      "intercepto": -0.9693338585643526,
+      "z Spiegelhalter": 3.060231426493997,
+      "p Spiegelhalter": 0.0022116602165917266
+    },
+    {
+      "modelo": "lightgbm",
+      "AUC": 0.8037954665260938,
+      "p permutación": 0.0033222591362126247,
+      "pendiente calibración": 0.8329811530706213,
+      "intercepto": -0.14789194596985372,
+      "z Spiegelhalter": 0.28205041097089795,
+      "p Spiegelhalter": 0.7779048563744445
+    }
+  ],
+  "shap_global": {
+    "tmax": 0.89774,
+    "tmin_mean_3d": 0.80498,
+    "rh_min": 0.7978,
+    "hi_mean_3d": 0.60646,
+    "doy_sin": 0.50089,
+    "tmin": 0.4858,
+    "hi_lag1": 0.37513,
+    "doy_cos": 0.34436,
+    "heat_index": 0.09934,
+    "hi_excess_p95": 0.08507,
+    "weekend": 0.01826,
+    "hot_streak": 0.0,
+    "first_heatwave": 0.0,
+    "hi_clim_ref": 0.0
+  },
+  "interaccion_aclimatacion": {
+    "modelo": "lightgbm",
+    "banda_hi": [
+      32,
+      36
+    ],
+    "shap_termico_estados_frescos": 0.3699437545080536,
+    "shap_termico_estados_calidos": -1.3423137466415758,
+    "diferencia": 1.7122575011496295
+  },
+  "odds_ratios": [
+    {
+      "variable": "tmax",
+      "coef_std": 0.0657,
+      "odds_ratio_1sd": 1.068,
+      "desv_std": 4.1389
+    },
+    {
+      "variable": "rh_min",
+      "coef_std": -0.0439,
+      "odds_ratio_1sd": 0.957,
+      "desv_std": 16.6164
+    },
+    {
+      "variable": "hi_excess_p95",
+      "coef_std": 0.0434,
+      "odds_ratio_1sd": 1.0443,
+      "desv_std": 4.1802
+    },
+    {
+      "variable": "tmin_mean_3d",
+      "coef_std": 0.043,
+      "odds_ratio_1sd": 1.0439,
+      "desv_std": 3.8643
+    },
+    {
+      "variable": "heat_index",
+      "coef_std": 0.0429,
+      "odds_ratio_1sd": 1.0439,
+      "desv_std": 4.1849
+    },
+    {
+      "variable": "hi_mean_3d",
+      "coef_std": 0.0418,
+      "odds_ratio_1sd": 1.0427,
+      "desv_std": 4.0818
+    },
+    {
+      "variable": "tmin",
+      "coef_std": 0.0416,
+      "odds_ratio_1sd": 1.0425,
+      "desv_std": 3.9175
+    },
+    {
+      "variable": "hi_lag1",
+      "coef_std": 0.0395,
+      "odds_ratio_1sd": 1.0403,
+      "desv_std": 4.2147
+    },
+    {
+      "variable": "hi_clim_ref",
+      "coef_std": -0.0375,
+      "odds_ratio_1sd": 0.9632,
+      "desv_std": 0.4757
+    },
+    {
+      "variable": "hot_streak",
+      "coef_std": 0.0295,
+      "odds_ratio_1sd": 1.03,
+      "desv_std": 0.3621
+    },
+    {
+      "variable": "doy_sin",
+      "coef_std": -0.0236,
+      "odds_ratio_1sd": 0.9767,
+      "desv_std": 0.6213
+    },
+    {
+      "variable": "first_heatwave",
+      "coef_std": -0.016,
+      "odds_ratio_1sd": 0.9841,
+      "desv_std": 0.1268
+    },
+    {
+      "variable": "doy_cos",
+      "coef_std": -0.0104,
+      "odds_ratio_1sd": 0.9897,
+      "desv_std": 0.2706
+    },
+    {
+      "variable": "weekend",
+      "coef_std": 0.0047,
+      "odds_ratio_1sd": 1.0048,
+      "desv_std": 0.4495
+    }
+  ]
+}

@@ -201,7 +201,7 @@ def test_md5_distinto_borra_la_descarga_corrupta(settings):
         {"name": "eaglei_outages_2023.csv", "download_url": "https://files.test/2023",
          "computed_md5": "0" * 32},
     ]}
-    respx.get(f"{FIGSHARE_API}/versions/{FIGSHARE_VERSION}").mock(
+    respx.get(FIGSHARE_API).mock(
         return_value=httpx.Response(200, content=json.dumps(meta).encode())
     )
     respx.get("https://files.test/mcc").mock(return_value=httpx.Response(200, text=MCC))

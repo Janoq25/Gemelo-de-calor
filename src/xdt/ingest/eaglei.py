@@ -104,7 +104,7 @@ class EagleiConnector(Connector):
         self.states = sorted(s.zfill(2) for s in states)
 
         meta = self.client.get(
-            f"{FIGSHARE_API}/versions/{FIGSHARE_VERSION}",
+            FIGSHARE_API,
             resource=f"figshare:{FIGSHARE_ARTICLE}:v{FIGSHARE_VERSION}",
         )
         files = {f["name"]: f for f in meta.json()["files"]}

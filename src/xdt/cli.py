@@ -25,8 +25,12 @@ from xdt.twin.state import StateStore
 app = typer.Typer(help="Gemelo digital de riesgo de morbilidad por calor", no_args_is_help=True)
 ingest_app = typer.Typer(help="Conectores de ingesta (L2)", no_args_is_help=True)
 state_app = typer.Typer(help="Estado del gemelo (L1)", no_args_is_help=True)
+agent_app = typer.Typer(
+    help="Copiloto y agentes inteligentes (LangGraph / LangFlow)", no_args_is_help=True
+)
 app.add_typer(ingest_app, name="ingest")
 app.add_typer(state_app, name="state")
+app.add_typer(agent_app, name="agent")
 
 console = Console()
 
@@ -519,6 +523,76 @@ def crisp(
         with session(db) as con:
             deploy(run, con, models_dir=models_dir, report_path=out_path.as_posix(),
                    log=console.print)
+
+
+@agent_app.command("copilot")
+def agent_copilot(
+    query: Annotated[
+        str,
+        typer.Argument(
+            help="Consulta o escenario (ej. 'Simula en AZ 5 días de calor y 20% apagón')"
+        ),
+    ],
+) -> None:
+    """Ejecuta el copiloto del gemelo digital basado en LangGraph."""
+    from rich.markdown import Markdown
+
+    from xdt.agent.graph import run_copilot
+
+    console.print(
+        f"[bold cyan]🤖 Ejecutando LangGraph Copilot...[/]\nConsulta: [italic]{query}[/]\n"
+    )
+    state = run_copilot(query)
+    response_md = state.get("response", "Sin respuesta.")
+    console.print(Markdown(response_md))
+
+
+@agent_app.command("export-flow")
+def agent_export_flow(
+    out: Annotated[
+        str,
+        typer.Option(help="Ruta de destino del archivo JSON exportable de LangFlow"),
+    ] = "langflow/gemelo_rag_flow.json",
+) -> None:
+    """Exporta el grafo RAG documental para importar en LangFlow."""
+    from xdt.agent.langflow_export import export_langflow_json
+
+    out_path = export_langflow_json(out)
+    console.print(f"[bold green]✓ Flujo RAG exportado con éxito para LangFlow en:[/] {out_path}")
+
+
+@agent_app.command("chat")
+def agent_chat() -> None:
+    """Inicia una sesión interactiva en terminal con el Copiloto LangGraph."""
+    from rich.markdown import Markdown
+    from rich.prompt import Prompt
+
+    from xdt.agent.graph import run_copilot
+
+    console.print("[bold cyan]====================================================[/]")
+    console.print("[bold cyan]  Copiloto Interactivo del Gemelo Digital (LangGraph)[/]")
+    console.print("[bold cyan]====================================================[/]")
+    console.print(
+        "[dim]Escribe tu consulta sobre calor y cortes (o 'salir' para terminar).[/]\n"
+    )
+
+    while True:
+        try:
+            user_input = Prompt.ask("[bold green]Tú[/]")
+            if not user_input.strip():
+                continue
+            if user_input.strip().lower() in {"salir", "exit", "quit", "q"}:
+                console.print("[yellow]Sesión finalizada. ¡Hasta luego![/]")
+                break
+
+            console.print("\n[dim]Pensando y simulando escenario...[/]")
+            result = run_copilot(user_input)
+            console.print("\n[bold cyan]Copiloto:[/]")
+            console.print(Markdown(result.get("response", "Sin respuesta.")))
+            console.print("")
+        except (KeyboardInterrupt, EOFError):
+            console.print("\n[yellow]Sesión interrumpida.[/]")
+            break
 
 
 if __name__ == "__main__":  # pragma: no cover

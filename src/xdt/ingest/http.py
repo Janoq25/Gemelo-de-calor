@@ -242,6 +242,22 @@ class CachedClient:
                     continue
                 raise last_exc
 
+            if resp.status_code == 403:
+                import urllib.request
+
+                try:
+                    req = urllib.request.Request(
+                        url, headers={"User-Agent": "curl/8.5.0", "Accept": "*/*"}
+                    )
+                    with urllib.request.urlopen(req) as uresp:
+                        content = uresp.read()
+                        content_type = uresp.headers.get("Content-Type", "")
+                        return self._write_cache(
+                            request_key, logical, params, content, content_type
+                        )
+                except Exception:
+                    pass
+
             resp.raise_for_status()
 
             if self.body_check is not None:
@@ -304,6 +320,27 @@ class CachedClient:
                         raise httpx.HTTPStatusError(
                             f"{resp.status_code} en {url}", request=resp.request, response=resp
                         )
+                    if resp.status_code == 403:
+                        import urllib.request
+
+                        req = urllib.request.Request(
+                            url, headers={"User-Agent": "curl/8.5.0", "Accept": "*/*"}
+                        )
+                        with urllib.request.urlopen(req) as uresp:
+                            cl = uresp.headers.get("Content-Length")
+                            total = int(cl) if cl else None
+                            content_type = uresp.headers.get("Content-Type", "")
+                            with open(tmp, "wb") as fh:
+                                while True:
+                                    chunk = uresp.read(1 << 20)
+                                    if not chunk:
+                                        break
+                                    fh.write(chunk)
+                                    h.update(chunk)
+                                    n += len(chunk)
+                                    if on_bytes:
+                                        on_bytes(n, total)
+                        break
                     resp.raise_for_status()
                     total = int(resp.headers["Content-Length"]) \
                         if "Content-Length" in resp.headers else None

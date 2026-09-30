@@ -22,6 +22,7 @@ El stack pesado está en extras, para no arrastrarlo antes de necesitarlo:
 uv sync --extra geo    # geopandas, xarray, rioxarray  (M0 areal, Landsat)
 uv sync --extra ml     # lightgbm, shap, statsmodels    (M3)
 uv sync --extra fair   # fairlearn                      (M5)
+uv sync --extra agent  # langgraph, langchain-core      (Copiloto y agentes)
 ```
 
 Python se fija en **3.12**: PyTorch y LightGBM aún no publican wheels para 3.14.
@@ -56,6 +57,15 @@ uv run xdt scenario --geo-level county --valid-from 2023-07-10 --fraccion-client
 
 # Calibracion retrospectiva (L5); --obs-known-at reproduce una corrida pasada
 uv run xdt calibrate --model lgbm --quantity hri_ed_rate_daily_va
+
+# Copiloto Inteligente (LangGraph): simula y explica escenarios en lenguaje natural
+uv run xdt agent copilot "Simula en Arizona (04) 5 dias de ola de calor y corte de luz del 20%"
+
+# Chat interactivo con el copiloto en terminal
+uv run xdt agent chat
+
+# Exportar grafo RAG documental para LangFlow
+uv run xdt agent export-flow --out langflow/gemelo_rag_flow.json
 
 # Motor predictivo L3 con reporte CRISP-DM (EDA, CV anidada, hiperparametros,
 # seleccion, pruebas robustas, SHAP). Requiere `uv sync --extra ml`.
