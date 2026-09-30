@@ -49,6 +49,10 @@ class Settings(BaseSettings):
         return self.data_root / "features"
 
     @property
+    def models_dir(self) -> Path:
+        return self.data_root / "models"
+
+    @property
     def twin_db_path(self) -> Path:
         return self.data_root / "twin.duckdb"
 

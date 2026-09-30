@@ -19,6 +19,7 @@ real y no dependa de que un servidor externo siga en pie.
 from __future__ import annotations
 
 import datetime as dt
+import hashlib
 import json
 import time
 from collections.abc import Callable
@@ -262,6 +263,103 @@ class CachedClient:
             )
 
         raise last_exc or RuntimeError(f"fallo irrecuperable en {url}")
+
+    def download(
+        self,
+        url: str,
+        *,
+        resource: str,
+        refresh: bool = False,
+        on_bytes: Callable[[int, int | None], None] | None = None,
+    ) -> RawArtifact:
+        """Descarga en streaming a la cache, sin cargar el cuerpo en memoria.
+
+        Para crudos de gigabytes (EAGLE-I: ~1.2 GB por ano). Mismo contrato
+        de cache que `get`: clave por (source, resource), escritura atomica,
+        modo offline respetado. El hash se calcula al vuelo.
+        """
+        request_key = hash_json({"source": self.source, "resource": resource, "params": {}})
+        if not refresh:
+            cached = self._read_cache(request_key)
+            if cached is not None:
+                return cached
+        if self.settings.offline:
+            raise OfflineCacheMiss(
+                f"modo offline y sin cache para {resource}. "
+                "Ejecuta la ingesta en linea una vez, o ajusta XDT_OFFLINE=0."
+            )
+
+        blob, meta = self._cache_paths(request_key)
+        blob.parent.mkdir(parents=True, exist_ok=True)
+        tmp = blob.with_suffix(".bin.tmp")
+
+        last_exc: Exception | None = None
+        for attempt in range(self.settings.http_max_retries):
+            h = hashlib.sha256()
+            n = 0
+            try:
+                # Sin timeout de lectura global: el limite aplica por bloque.
+                with self.client.stream("GET", url) as resp:
+                    if resp.status_code in RETRYABLE_STATUS:
+                        raise httpx.HTTPStatusError(
+                            f"{resp.status_code} en {url}", request=resp.request, response=resp
+                        )
+                    resp.raise_for_status()
+                    total = int(resp.headers["Content-Length"]) \
+                        if "Content-Length" in resp.headers else None
+                    content_type = resp.headers.get("Content-Type", "")
+                    with open(tmp, "wb") as fh:
+                        for chunk in resp.iter_bytes(1 << 20):
+                            fh.write(chunk)
+                            h.update(chunk)
+                            n += len(chunk)
+                            if on_bytes:
+                                on_bytes(n, total)
+                if total is not None and n != total:
+                    raise httpx.TransportError(f"descarga incompleta: {n} de {total} bytes")
+                break
+            except (httpx.TransportError, httpx.HTTPStatusError) as exc:
+                retryable = isinstance(exc, httpx.TransportError) or (
+                    exc.response.status_code in RETRYABLE_STATUS
+                )
+                tmp.unlink(missing_ok=True)
+                if not retryable:
+                    raise
+                last_exc = exc
+                time.sleep(self._backoff(attempt, None))
+        else:
+            raise last_exc or RuntimeError(f"fallo irrecuperable en {url}")
+
+        tmp.replace(blob)
+        fetched_at = dt.datetime.now(dt.UTC).replace(tzinfo=None)
+        meta.write_text(
+            json.dumps(
+                {
+                    "raw_hash": h.hexdigest(),
+                    "source": self.source,
+                    "resource": resource,
+                    "params": {"url": url},
+                    "n_bytes": n,
+                    "content_type": content_type,
+                    "fetched_at": fetched_at.isoformat(),
+                },
+                indent=2,
+                sort_keys=True,
+            ),
+            encoding="utf-8",
+        )
+        return RawArtifact(
+            raw_hash=h.hexdigest(),
+            request_key=request_key,
+            source=self.source,
+            resource=resource,
+            params={"url": url},
+            path=blob,
+            n_bytes=n,
+            content_type=content_type,
+            fetched_at=fetched_at,
+            from_cache=False,
+        )
 
     def close(self) -> None:
         if self._client is not None:

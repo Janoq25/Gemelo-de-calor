@@ -210,6 +210,39 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
   font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--accent-ink);
   display:block;margin-bottom:4px}
 
+/* ---------- riesgo (L3 + L4) ---------- */
+.ctrl{display:flex;flex-direction:column;gap:10px;padding:14px 16px}
+.ctrl label{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3)}
+.ctrl input[type=range]{width:100%;accent-color:var(--accent)}
+.daylbl{font-family:"IBM Plex Sans Condensed",sans-serif;font-size:24px;font-weight:700;
+  font-variant-numeric:tabular-nums}
+.scenbar{display:flex;border:1px solid var(--rule);border-radius:4px;overflow:hidden;
+  background:var(--surface-2)}
+.scenbar button{flex:1;font:600 12.5px/1 "IBM Plex Sans",sans-serif;padding:9px 4px;
+  background:transparent;color:var(--ink-2);border:0;cursor:pointer;
+  border-right:1px solid var(--rule)}
+.scenbar button:last-child{border-right:0}
+.scenbar button[aria-pressed="true"]{background:var(--accent);color:#fff}
+.scenbar button:focus-visible{outline:2px solid var(--accent-ink);outline-offset:-2px}
+.why{display:grid;grid-template-columns:minmax(0,1fr) 110px;gap:5px 10px;
+  font-size:12.5px;align-items:center;margin-top:6px}
+.why .nm{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.why .bar{position:relative;height:12px;background:var(--surface-2);border-radius:2px}
+.why .bar i{position:absolute;top:0;bottom:0;border-radius:2px}
+.why .bar i.up{left:50%;background:var(--r4)}
+.why .bar i.dn{right:50%;background:var(--accent)}
+.why .bar:after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;
+  background:var(--ink-3)}
+.spark{width:100%;height:auto;display:block;margin-top:6px}
+.mtable td.on,.mtable th.on{color:var(--ink);font-weight:600}
+.mtable tr.pick td{background:var(--accent-wash)}
+.ok-y{color:var(--ok);font-weight:600}.ok-n{color:var(--ink-3)}
+.caveat.warn{border-left-color:var(--r4)}
+.inline-explainer a{color:var(--accent-ink);font-weight:600}
+.twocol{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:760px){.twocol{grid-template-columns:1fr}}
+
 @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 
@@ -260,7 +293,75 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
     </div>
   </section>
 
-  <section id="mapa" style="margin-top:0">
+  <section id="riesgo" style="margin-top:0" hidden>
+    <div class="shead">
+      <h2>Riesgo predicho por el gemelo</h2>
+      <span class="note" id="rnote"></span>
+    </div>
+    <p class="lede">Probabilidad de que un estado tenga <b>al menos una visita a urgencias
+      por calor</b> ese día (población VA), según el modelo elegido por el motor CRISP-DM.
+      Cada estado-día lo predice el modelo del pliegue que <b>no vio su región</b>: es una
+      predicción fuera de muestra, retrospectiva sobre 2023, no una alerta en tiempo real.</p>
+    <div class="caveat warn" id="rcal" hidden style="margin-bottom:18px"></div>
+
+    <div class="console">
+      <div class="panel mapbox">
+        <svg class="usmap" id="rmap" viewBox="0 0 960 610" role="img"
+             aria-label="Mapa de riesgo predicho por estado">
+          <g id="rstates"></g><g id="rlabels"></g>
+        </svg>
+        <div class="inline-explainer">
+          <span class="title">Cómo leerlo</span>
+          Cada estado se colorea por la probabilidad predicha para el día elegido (más oscuro,
+          más riesgo). Un <b>punto</b> sobre el estado marca los estados donde ese día sí hubo al menos
+          una visita: así se ve dónde acertó y dónde no. Gris = estado sin predicción (fuera
+          de la malla climática o sin desenlace). Mueve el deslizador para recorrer la
+          temporada y usa los botones de escenario para simular un verano más caluroso.
+        </div>
+        <div class="inline-explainer" id="rexpl"></div>
+      </div>
+
+      <div class="rail">
+        <div class="panel ctrl">
+          <label for="rday">Día</label>
+          <div class="daylbl" id="rdaylbl">—</div>
+          <input type="range" id="rday" min="0" max="0" value="0" aria-describedby="rdaylbl">
+          <label>Escenario (L4)</label>
+          <div class="scenbar" id="rscen" role="group" aria-label="Escenario"></div>
+          <div class="bigsub" id="rsum"></div>
+        </div>
+        <div class="panel readout" id="rread"></div>
+        <div class="panel">
+          <p class="klabel">Probabilidad predicha</p>
+          <div class="legend" id="rlegend"></div>
+        </div>
+      </div>
+    </div>
+
+    <h3 style="margin:30px 0 12px;font-size:17px">El modelo detrás del mapa</h3>
+    <div class="tablewrap">
+      <table class="ledger mtable">
+        <thead><tr><th>Modelo</th><th>Nivel</th><th>AUC global [IC 95 %]</th>
+          <th>AUC dentro de región</th><th>AUC temporal</th><th>Brier</th>
+          <th>Pendiente calib.</th><th>Spiegelhalter p</th><th>Filtros A·B·C</th></tr></thead>
+        <tbody id="rmodels"></tbody>
+      </table>
+    </div>
+    <div class="twocol">
+      <div class="inline-explainer">
+        <span class="title">Cómo leer la tabla</span>
+        <b>AUC</b>: probabilidad de que un día con visita reciba más riesgo que uno sin
+        visita (0,5 = azar). <b>Global</b> junta todos los estados; <b>dentro de región</b>
+        solo ordena días de una región que el modelo no vio; <b>temporal</b> entrena hasta
+        julio y evalúa agosto–septiembre. <b>Brier</b>: error de la probabilidad (menor es
+        mejor). <b>Pendiente de calibración</b> 1 y <b>Spiegelhalter p ≥ 0,05</b> = las
+        probabilidades se pueden leer como porcentajes.
+      </div>
+      <div class="inline-explainer" id="rverdict"></div>
+    </div>
+  </section>
+
+  <section id="mapa">
     <div class="shead">
       <h2>Quién reporta, y cuánto</h2>
       <span class="note">EPHT medida 440 · tasa ajustada por edad · por 100 000 hab.</span>
@@ -368,6 +469,13 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
     </div>
     <p class="lede">Cada descarga cruda queda indexada con su hash SHA-256. Cualquier cifra
       de esta página se puede rastrear hasta el archivo exacto del que salió.</p>
+    <div class="tablewrap" style="margin-bottom:14px">
+      <table class="ledger">
+        <thead><tr><th>Fuente</th><th>Artefactos crudos</th><th>Bytes</th><th>Última descarga</th></tr></thead>
+        <tbody id="bysource"></tbody>
+      </table>
+    </div>
+    <p class="klabel" style="margin-top:6px">Últimas descargas</p>
     <div class="tablewrap">
       <table class="ledger">
         <thead><tr><th>Hash</th><th>Fuente</th><th>Recurso</th><th>Bytes</th><th>Descargado</th></tr></thead>
@@ -383,7 +491,7 @@ footer{margin-top:44px;padding-top:18px;border-top:1px solid var(--rule);
 
   <section id="alcance">
     <div class="shead"><h2>Lo que esta consola todavía no muestra</h2></div>
-    <div class="caveat">
+    <div class="caveat" id="alcance-txt">
       <b>No hay ningún número de riesgo en esta página, y es deliberado.</b>
       La capa L3 (emulador predictivo y explicabilidad SHAP) aún no está construida,
       así que mostrar un «riesgo» sería inventarlo. Lo que se ve son datos observados
@@ -653,6 +761,11 @@ document.getElementById("layers").innerHTML = PAYLOAD.capas.map(l => `
     <span class="status ${l.estado}">${l.estado}</span>
   </div>`).join("");
 
+/* ---------- procedencia por fuente ---------- */
+document.getElementById("bysource").innerHTML = (PAYLOAD.procedencia.por_fuente || []).map(r => `
+  <tr><td class="k">${r.fuente}</td><td class="tnum">${r.artefactos.toLocaleString("es")}</td>
+  <td class="tnum">${r.bytes.toLocaleString("es")}</td><td>${r.ultima}</td></tr>`).join("");
+
 /* ---------- ledger ---------- */
 document.getElementById("ledger").innerHTML = PAYLOAD.procedencia.artefactos.map(a => `
   <tr>
@@ -665,4 +778,221 @@ document.getElementById("ledger").innerHTML = PAYLOAD.procedencia.artefactos.map
   `<tr><td colspan="5">Sin descargas registradas.</td></tr>`;
 
 render();
+
+/* =====================================================================
+   Riesgo predicho (L3) y escenarios (L4). Todo sale de PAYLOAD.modelo,
+   que xdt export lee del registro L0: no hay cifras escritas a mano.
+   ===================================================================== */
+(function riesgo(){
+  const M = PAYLOAD.modelo;
+  const alc = document.getElementById("alcance-txt");
+  if(!M){ return; }
+  document.getElementById("riesgo").hidden = false;
+  document.getElementById("mapa").style.marginTop = "44px";
+
+  const RB = [0.05, 0.10, 0.20, 0.40];
+  const rbin = v => { let i=0; while(i<RB.length && v>=RB[i]) i++; return i; };
+  const pct = v => (100*v).toLocaleString("es",{maximumFractionDigits:1}) + " %";
+  const num = (v,d=3) => v.toLocaleString("es",{minimumFractionDigits:d,maximumFractionDigits:d});
+  const SHORT = {heat_index:"Índice de calor", tmax:"T. máxima", tmin:"T. mínima",
+    rh_min:"Humedad mínima", hi_excess_p95:"Exceso sobre p95 local",
+    hi_mean_3d:"Índice de calor (3 días)", hi_lag1:"Índice de calor de ayer",
+    tmin_mean_3d:"T. mínima (3 días)", hot_streak:"Racha de calor",
+    first_heatwave:"Primera ola del verano", hi_clim_ref:"Clima habitual del estado",
+    doy_sin:"Época del año", doy_cos:"Época del año", weekend:"Fin de semana"};
+  const SC = [["p","Clima observado"], ["s1","+1 °C"], ["s2","+2 °C"], ["s3","+3 °C"]];
+  const fechas = M.fechas;
+  const fmtDay = d => new Date(d+"T12:00:00").toLocaleDateString("es",
+    {weekday:"short", day:"numeric", month:"long", year:"numeric"});
+  const met = M.metricas[M.modelo];
+
+  // día inicial: el de mayor riesgo medio nacional (el más ilustrativo)
+  const meanAt = i => { let s=0,n=0; for(const st of Object.values(M.riesgo)){
+      const v=st.p[i]; if(v!=null){s+=v;n++;} } return n? s/n : 0; };
+  let day = fechas.reduce((b,_,i) => meanAt(i) > meanAt(b) ? i : b, 0);
+  let scen = "p";
+  // estado inicial: el de mayor riesgo ese dia, para que el "¿por que?" se vea sin clic
+  let rsel = Object.entries(M.riesgo).reduce((b,[pc,st]) =>
+    (st.p[day] ?? -1) > ((M.riesgo[b]||{p:[]}).p[day] ?? -1) ? pc : b, null);
+
+  document.getElementById("rnote").innerHTML =
+    `L3 · ${M.modelo} v${M.version} · fuera de muestra · ${fechas[0]} a ${fechas[fechas.length-1]}`;
+
+  if(M.seleccion.requiere_recalibracion){
+    const c = document.getElementById("rcal");
+    c.hidden = false;
+    c.innerHTML = `<b>Probabilidades sin calibrar.</b> El modelo ordena bien los estados y
+      los días (AUC global ${num(met.auc_global)}), pero sus porcentajes no son literales:
+      pendiente de calibración ${num(met.pendiente_calibracion,2)} (ideal 1) y
+      Spiegelhalter p ${met.p_spiegelhalter < 0.001 ? "< 0,001" : "= "+num(met.p_spiegelhalter)}.
+      Úsalo para <b>comparar</b> estados y días, no para leer «30 % de riesgo» al pie de la
+      letra. Ningún modelo de la escalera cumplió a la vez los tres criterios de selección;
+      la capa L5 debe recalibrarlo antes de emitir alertas.`;
+  }
+
+  /* --- mapa --- */
+  const NS = "http://www.w3.org/2000/svg";
+  const gS = document.getElementById("rstates"), gL = document.getElementById("rlabels");
+  Object.entries(PATHS).forEach(([pc, p]) => {
+    const el = document.createElementNS(NS,"path");
+    el.setAttribute("d", p.d); el.setAttribute("class","st");
+    el.dataset.pc = pc; el.setAttribute("tabindex","0"); el.setAttribute("role","button");
+    gS.appendChild(el);
+    const t = document.createElementNS(NS,"text");
+    t.setAttribute("class","lbl"); t.setAttribute("x", p.x); t.setAttribute("y", p.y);
+    t.setAttribute("text-anchor","middle"); t.textContent = pc; gL.appendChild(t);
+    const dot = document.createElementNS(NS,"circle");
+    dot.setAttribute("cx", p.x); dot.setAttribute("cy", p.y + 9); dot.setAttribute("r", 3.4);
+    dot.setAttribute("class","ev"); dot.dataset.pc = pc;
+    dot.style.fill = "var(--ink)"; dot.style.pointerEvents = "none";
+    gL.appendChild(dot);
+  });
+  const rpick = pc => { rsel = pc; rrender(); };
+  gS.addEventListener("click", e => { const p=e.target.closest("path"); if(p) rpick(p.dataset.pc); });
+  gS.addEventListener("mouseover", e => { const p=e.target.closest("path"); if(p) readout(p.dataset.pc); });
+  gS.addEventListener("mouseout", () => readout(rsel));
+  gS.addEventListener("keydown", e => {
+    if((e.key==="Enter"||e.key===" ") && e.target.dataset.pc){ e.preventDefault(); rpick(e.target.dataset.pc); }
+  });
+  gS.addEventListener("focusin", e => { if(e.target.dataset.pc) readout(e.target.dataset.pc); });
+
+  /* --- controles --- */
+  const slider = document.getElementById("rday");
+  slider.max = fechas.length - 1; slider.value = day;
+  slider.addEventListener("input", () => { day = +slider.value; rrender(); });
+  const sb = document.getElementById("rscen");
+  sb.innerHTML = SC.map(([k,l]) => `<button type="button" data-k="${k}" aria-pressed="${k===scen}">${l}</button>`).join("");
+  sb.addEventListener("click", e => {
+    const b = e.target.closest("button"); if(!b) return;
+    scen = b.dataset.k;
+    [...sb.children].forEach(c => c.setAttribute("aria-pressed", c.dataset.k===scen));
+    rrender();
+  });
+
+  document.getElementById("rlegend").innerHTML =
+    ["menos de 5 %","5 – 10 %","10 – 20 %","20 – 40 %","40 % o más"].map((l,i) =>
+      `<div class="lrow"><span class="sw" style="background:var(${RAMP[i]})"></span>${l}</div>`).join("") +
+    `<div class="lrow" style="margin-top:4px;padding-top:7px;border-top:1px dashed var(--rule)">
+       <span class="sw" style="background:var(--nodata)"></span>sin predicción</div>
+     <div class="lrow"><svg width="26" height="12"><circle cx="13" cy="6" r="3.4" fill="var(--ink)"></circle></svg>
+       hubo ≥1 visita ese día</div>`;
+
+  /* --- tabla de modelos --- */
+  const S = M.seleccion;
+  document.getElementById("rmodels").innerHTML = Object.entries(M.metricas).map(([k,m]) => {
+    const f = [S.filtro_a_auc_global, S.filtro_b_ranking_region, S.filtro_c_calibrados]
+      .map(L => L.includes(k) ? '<span class="ok-y">✓</span>' : '<span class="ok-n">✗</span>').join(" ");
+    return `<tr class="${k===M.modelo?"pick":""}">
+      <td class="k">${k}${k===M.modelo?" · elegido":""}</td><td>${m.nivel}</td>
+      <td class="tnum">${num(m.auc_global)} [${num(m.auc_global_ic95[0])}–${num(m.auc_global_ic95[1])}]</td>
+      <td class="tnum">${num(m.auc_region_media)}</td><td class="tnum">${num(m.auc_temporal)}</td>
+      <td class="tnum">${num(m.brier)}</td><td class="tnum">${num(m.pendiente_calibracion,2)}</td>
+      <td class="tnum">${m.p_spiegelhalter < 0.001 ? "< 0,001" : num(m.p_spiegelhalter)}</td>
+      <td>${f}</td></tr>`;
+  }).join("");
+  const umb = M.metricas.umbral;
+  document.getElementById("rverdict").innerHTML = `<span class="title">Qué explica</span>
+    Se eligió <b>${M.modelo}</b>: el más simple que no es significativamente peor que el mejor
+    en AUC global (A, DeLong + Holm) ni en el orden de días dentro de cada región (B,
+    Friedman + Nemenyi). ${S.filtro_c_calibrados.includes(M.modelo) ? "Además está calibrado (C)." :
+    "Ninguno de los que pasan A y B está calibrado (C), por eso se marca para recalibrar."}
+    ${umb ? `La regla de umbral tipo NWS logra AUC ${num(umb.auc_global)}: el modelo aporta sobre
+    todo al distinguir <b>qué estados</b> tienen más riesgo; dentro de una misma región la ventaja
+    es pequeña (${num(met.auc_region_media)} frente a ${num(umb.auc_region_media)}).` : ""}
+    Detalle completo, con cada prueba estadística, en el
+    <a href="../${M.reporte}">reporte CRISP-DM</a>.`;
+
+  /* --- lectura de un estado --- */
+  function spark(st){
+    const W=264, H=64, P=4, xs=i=>P+i*(W-2*P)/(fechas.length-1);
+    const vals = st[scen].map(v => v==null?null:v);
+    const mx = Math.max(0.05, ...vals.filter(v=>v!=null), ...st.p.filter(v=>v!=null));
+    const ys = v => H-P-(v/mx)*(H-2*P);
+    let d="", pen=false;
+    vals.forEach((v,i) => { if(v==null){pen=false;return;} d += (pen?"L":"M")+xs(i).toFixed(1)+","+ys(v).toFixed(1); pen=true; });
+    const ev = st.y.map((y,i)=>y===1?`<circle cx="${xs(i).toFixed(1)}" cy="${H-2}" r="1.8" fill="var(--r4)"></circle>`:"").join("");
+    return `<svg class="spark" viewBox="0 0 ${W} ${H}" role="img" aria-label="Riesgo predicho en la temporada">
+      <line x1="${xs(day)}" x2="${xs(day)}" y1="0" y2="${H}" stroke="var(--accent)" stroke-width="1"></line>
+      <path d="${d}" fill="none" stroke="var(--ink-2)" stroke-width="1.3"></path>${ev}</svg>`;
+  }
+  function readout(pc){
+    const box = document.getElementById("rread");
+    const st = pc && M.riesgo[pc];
+    const name = pc && byPostal[pc] ? byPostal[pc].name : pc;
+    if(!st){
+      box.innerHTML = `<p class="klabel">${pc ? name : "Estado seleccionado"}</p>
+        <p class="hint">${pc ? "Sin predicción para este estado (fuera de la malla climática o sin desenlace)."
+          : "Pasa el cursor o pulsa un estado para ver su riesgo, qué lo explica y su temporada."}</p>`;
+      return;
+    }
+    const v = st[scen][day], v0 = st.p[day], y = st.y[day];
+    const why = (M.porque[pc] || [])[day] || [];
+    const mxw = Math.max(0.01, ...why.map(w => Math.abs(w[1])));
+    box.innerHTML = `
+      <p class="klabel">${name} · ${fmtDay(fechas[day])}</p>
+      <div class="rate">${v==null?"—":pct(v)}<small>${scen==="p"?"riesgo predicho":"con "+SC.find(s=>s[0]===scen)[1]}</small></div>
+      ${scen!=="p" && v!=null && v0!=null ? `<div class="bigsub">clima observado: ${pct(v0)} (${v-v0>=0?"+":""}${(100*(v-v0)).toLocaleString("es",{maximumFractionDigits:1})} puntos)</div>`:""}
+      <div style="margin-top:8px">${y===1?'<span class="tag si">hubo ≥1 visita ese día</span>':y===0?'<span class="tag no">sin visitas ese día</span>':""}</div>
+      <p class="klabel" style="margin-top:14px">¿Por qué? (SHAP, clima observado)</p>
+      <div class="why">${why.map(([f,c]) => `
+        <span class="nm" title="${(M.etiquetas[f]||f).replace(/"/g,"&quot;")}">${SHORT[f]||f}</span>
+        <span class="bar" title="${c>=0?"+":""}${num(c,2)} log-odds"><i class="${c>=0?"up":"dn"}" style="width:${(50*Math.abs(c)/mxw).toFixed(1)}%"></i></span>`).join("")}
+      </div>
+      <p class="hint" style="margin-top:8px">Rojo sube el riesgo, verde azulado lo baja, respecto
+        del riesgo medio del modelo. Explica al modelo, no causa las visitas.</p>
+      <p class="klabel" style="margin-top:14px">Temporada ${fechas[0].slice(0,4)}</p>
+      ${spark(st)}
+      <p class="hint">Línea: riesgo predicho día a día. Marcas rojas abajo: días con visita.
+        Línea vertical: día elegido.</p>`;
+  }
+
+  /* --- render --- */
+  function rrender(){
+    document.getElementById("rdaylbl").textContent = fmtDay(fechas[day]);
+    let n=0, hi=0, ev=0, evhi=0, sum=0;
+    gS.querySelectorAll("path").forEach(p => {
+      const st = M.riesgo[p.dataset.pc];
+      const v = st ? st[scen][day] : null;
+      p.setAttribute("fill", v==null ? "var(--nodata)" : `var(${RAMP[rbin(v)]})`);
+      p.classList.toggle("sel", p.dataset.pc === rsel);
+      const nm = byPostal[p.dataset.pc] ? byPostal[p.dataset.pc].name : p.dataset.pc;
+      p.setAttribute("aria-label", v==null ? `${nm}: sin predicción` : `${nm}: riesgo ${pct(v)}`);
+      if(v!=null){ n++; sum+=v; if(rbin(v)>=3) hi++; if(st.y[day]===1){ ev++; if(rbin(v)>=3) evhi++; } }
+    });
+    gL.querySelectorAll("text").forEach(t => {
+      const st = M.riesgo[t.textContent], v = st ? st[scen][day] : null;
+      t.style.fill = (v!=null && rbin(v)>=3) ? "#fff" : "var(--ink-2)";
+    });
+    gL.querySelectorAll("circle.ev").forEach(c => {
+      const st = M.riesgo[c.dataset.pc];
+      c.style.display = st && st.y[day]===1 ? "" : "none";
+    });
+    const base = (() => { let s=0,k=0; for(const st of Object.values(M.riesgo)){ const v=st.p[day]; if(v!=null){s+=v;k++;} } return k?s/k:0; })();
+    document.getElementById("rsum").innerHTML =
+      `<b>${hi}</b> de ${n} estados con riesgo ≥ 20 %<br>` +
+      `<b>${ev}</b> ${ev===1?"estado tuvo":"estados tuvieron"} visitas; ${evhi} ${ev===1?"estaba":"de ellos estaban"} en ≥ 20 %<br>` +
+      `riesgo medio ${pct(n?sum/n:0)}` + (scen!=="p" ? ` (clima observado: ${pct(base)})` : "");
+    const expl = document.getElementById("rexpl");
+    expl.innerHTML = `<span class="title">Qué explica</span>` + (scen==="p"
+      ? `El ${fmtDay(fechas[day])}, ${ev} ${ev===1?"estado tuvo":"estados tuvieron"} al menos una
+         visita y ${evhi} ${ev===1?"ya figuraba":"de ellos ya figuraban"} con riesgo ≥ 20 %. Los estados rojos sin punto son falsas alarmas del
+         modelo; los claros con punto, visitas que no anticipó. Con una alerta a partir de
+         20 %, esta es la cobertura que habría tenido ese día.`
+      : `Con ${SC.find(s=>s[0]===scen)[1]} sobre el clima observado, el riesgo medio pasa de
+         ${pct(base)} a ${pct(n?sum/n:0)}. Es un contrafactual <b>del modelo</b>, no del mundo:
+         muestra cuánto se apoya el modelo en el calor para ordenar estados y días, y se
+         calcula con los mismos modelos de pliegue que la predicción observada.`);
+    readout(rsel);
+  }
+  rrender();
+
+  /* --- lo que sigue sin mostrarse --- */
+  alc.innerHTML = `<b>Qué muestra y qué no esta consola.</b> El riesgo de arriba es
+    <b>retrospectivo</b>: predicciones fuera de muestra sobre ${fechas[0].slice(0,4)}, emitidas
+    después de conocer el desenlace. Por eso L5 las cuenta como post-dicciones
+    (${M.l5.post_dicciones.toLocaleString("es")}) y no como pronósticos genuinos
+    (${M.l5.genuinas.toLocaleString("es")}). Aún faltan: pronóstico meteorológico para predecir
+    días futuros, el apagón como variable del modelo (EAGLE-I solo cubre AZ y LA), más años de
+    desenlace (bloqueado por el token de EPHT), la población no VA y la escala intraurbana.`;
+})();
 </script>

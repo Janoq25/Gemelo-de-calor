@@ -11,3 +11,13 @@ htmlcov/
 !/data/.gitkeep
 *.duckdb
 *.duckdb.wal
+
+# Temporales de Office y cache
+~$*
+*.tmp
+
+# Formularios y tokens
+API Token Request Form*.docx
+
+# Documentos pesados / bibliografía
+traducidos/

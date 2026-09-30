@@ -18,14 +18,51 @@ stages:
           persist: true
           cache: false
 
-  # ingest_epht_daily_va:      # medida 1385 - Etapa A (§5.1)
+  # Estados piloto: Arizona (04) y Luisiana (22), los extremos de la medida 440
+  # que cita el plan. Ampliar la lista de --states amplia la cobertura.
+  ingest_gridmet:
+    cmd: xdt ingest gridmet --states 04,22 --years 2017-2026
+    deps:
+      - src/xdt/ingest/gridmet.py
+      - src/xdt/harmonize/centroids.py
+      - src/xdt/harmonize/aggregate.py
+    outs:
+      - data/raw/gridmet:
+          persist: true
+          cache: false
+      - data/raw/census:
+          persist: true
+          cache: false
+
+  ingest_eaglei:
+    cmd: xdt ingest eaglei --states 04,22 --years 2023
+    deps:
+      - src/xdt/ingest/eaglei.py
+      - src/xdt/harmonize/fips.py
+    outs:
+      - data/raw/eaglei:
+          persist: true
+          cache: false
+
+  # ingest_epht_daily_va:      # medida 1385 - Etapa A (§5.1) - requiere token
   # ingest_epht_daily_nonva:   # medida 1238 - serie de contraste
-  # ingest_gridmet:            # 4 km diario, fuente climatica primaria
-  # ingest_eaglei:             # apagones 15 min - evento compuesto
   # ingest_svi / places / lace / landsat
   # harmonize:                 # crosswalks ZCTA <-> tract <-> condado (M0)
   # features:                  # M2
-  # train_baseline_threshold:  # nivel 0 - es H0
-  # train_gbm:                 # nivel 2
+  # Niveles 0-2 de la escalera (umbral, logistica, RF, LightGBM) + reporte CRISP-DM.
+  crisp:
+    cmd: xdt crisp --years 2023 --ref-years 2019-2022 --out reports/crisp_dm.html
+    deps:
+      - src/xdt/features/panel.py
+      - src/xdt/models
+      - src/xdt/validate/stats.py
+      - src/xdt/explain/xai.py
+      - src/xdt/report
+    outs:
+      - reports/crisp_dm.html:
+          cache: false
+    metrics:
+      - reports/crisp_dm.json:
+          cache: false
   # train_hybrid:              # nivel 3
   # explain / fairness / validate / calibrate

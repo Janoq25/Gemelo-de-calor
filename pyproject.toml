@@ -19,7 +19,7 @@ dependencies = [
 [project.optional-dependencies]
 # Instalar por etapas: el nucleo del gemelo (L0/L1/L2/L4) no necesita nada de esto.
 geo = ["geopandas>=1.0", "shapely>=2.0", "xarray>=2024.6", "rioxarray>=0.17", "netCDF4>=1.7", "pystac-client>=0.8"]
-ml  = ["lightgbm>=4.5", "scikit-learn>=1.5", "shap>=0.46", "statsmodels>=0.14"]
+ml  = ["lightgbm>=4.5", "scikit-learn>=1.5", "shap>=0.46", "statsmodels>=0.14", "matplotlib>=3.9"]
 dl  = ["torch>=2.4"]
 fair = ["fairlearn>=0.10"]
 app = ["streamlit>=1.38", "pydeck>=0.9"]
