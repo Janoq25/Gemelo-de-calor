@@ -595,5 +595,25 @@ def agent_chat() -> None:
             break
 
 
+@app.command("app")
+def run_app(
+    port: Annotated[int, typer.Option(help="Puerto para la aplicación Streamlit")] = 8501,
+) -> None:
+    """Lanza la aplicación web interactiva del Gemelo Digital en Streamlit."""
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    app_path = Path(__file__).resolve().parents[2] / "app" / "streamlit_app.py"
+    if not app_path.exists():
+        console.print(f"[red]Error: no se encontró {app_path}[/]")
+        raise typer.Exit(1)
+
+    console.print(f"[bold green]🔥 Iniciando motor Streamlit en el puerto {port}...[/]")
+    cmd = [sys.executable, "-m", "streamlit", "run", str(app_path), "--server.port", str(port)]
+    subprocess.run(cmd)
+
+
 if __name__ == "__main__":  # pragma: no cover
     app()
+
